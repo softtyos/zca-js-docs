@@ -1,0 +1,46 @@
+# @softtynet/zca-js (v2.3.12)
+
+> Bộ thư viện SDK Zalo API hiện đại dành cho Node.js, TypeScript và Bun, được phát triển và duy trì bởi Softtynet Co., Ltd. Cung cấp 333 API nguyên bản chia theo 12 Domains chuẩn kiến trúc Zalo PC 26.7.10.
+
+## Thông tin định danh gói (Package Identity)
+- **Package NPM**: `@softtynet/zca-js`
+- **Phiên bản**: `2.3.12`
+- **Đơn vị phát triển**: Softtynet Co., Ltd.
+- **Repository**: https://github.com/softtyos/zca-js
+- **Website Tài liệu chính thức**: https://softtyos.github.io/zca-js-docs/
+- **Tài liệu đầy đủ cho AI/LLM (1 file duy nhất)**: https://softtyos.github.io/zca-js-docs/llms-full.txt
+
+## Kiến trúc 12 Domains & Điểm khác biệt cốt lõi
+1. **Tổ chức theo 12 Domains (`api.<domain>.<method>`) và hỗ trợ gọi phẳng (`api.<method>`)**:
+   - `api.auth` (14 APIs): [Xác thực & Phiên (Auth)](https://softtyos.github.io/zca-js-docs/api/auth.html) — Quản lý thiết bị đăng nhập, xuất/nhập phiên (exportSession), mã QR, Keep-Alive, đổi mật khẩu, E2EE và giải mã GID (Global ID) / Noised ID.
+   - `api.chat` (52 APIs): [Tin nhắn, Hội thoại & Dịch AI (Chat)](https://softtyos.github.io/zca-js-docs/api/chat.html) — Gửi/nhận tin nhắn văn bản, ảnh, video, voice, card, thu hồi tin nhắn, Dịch đa ngôn ngữ bằng Zalo AI, đánh dấu tin nhắn quan trọng, chặn chia sẻ và trạng thái Đã nhận/Đã xem.
+   - `api.group` (46 APIs): [Nhóm & Cộng đồng (Group)](https://softtyos.github.io/zca-js-docs/api/group.html) — Quản lý nhóm & Cộng đồng, lấy thông tin nhóm (V1/V2/V3/V4), lịch sử tin nhắn Cloud, trạng thái tin nhắn thành viên, chủ đề (Topic) và phân quyền.
+   - `api.friend` (37 APIs): [Bạn bè & Danh bạ (Friend)](https://softtyos.github.io/zca-js-docs/api/friend.html) — Quản lý danh sách bạn bè, lời mời kết bạn, gợi ý kết bạn, biệt danh (alias), chặn, đồng bộ danh bạ và kiểm tra trạng thái hoạt động PC/Web.
+   - `api.profile` (22 APIs): [Hồ sơ cá nhân & Emoji Status (Profile)](https://softtyos.github.io/zca-js-docs/api/profile.html) — Thông tin tài khoản, Mini Profile, đổi ảnh đại diện, cài đặt quyền riêng tư, trạng thái cảm xúc (Emoji Status), hồ sơ Doanh nghiệp và xác thực EKYC.
+   - `api.sync` (10 APIs): [Đồng bộ Mobile ZDB 4.0 (Sync)](https://softtyos.github.io/zca-js-docs/api/sync.html) — Đồng bộ toàn bộ lịch sử tin nhắn từ điện thoại sang PC qua giao thức RSA-2048 & ZDB 4.0 AES-256-CBC multi-chunk, kiểm tra Backup, Cross-DB và đồng bộ hành động Media.
+   - `api.zcloud` (16 APIs): [Đám mây ZCloud & ZFamily (ZCloud)](https://softtyos.github.io/zca-js-docs/api/zcloud.html) — Truy vấn dung lượng My Cloud / ZCloud, ZFamily, khóa giải mã ViewerKey (98yS AES-256-CBC), lấy link tải hàng loạt, quản lý hàng đợi và di chuyển dữ liệu.
+   - `api.call` (30 APIs): [Gọi thoại, Video & Gọi nhóm (Call)](https://softtyos.github.io/zca-js-docs/api/call.html) — Điều khiển trọn vẹn 30 API cuộc gọi thoại, video 1-1, gọi nhóm và bộ máy Call Engine (ZaloRtcSession UDP/SRTP 2 chiều & ZaloCallController).
+   - `api.media` (8 APIs): [Kho lưu trữ & Chuyển giọng nói (Media)](https://softtyos.github.io/zca-js-docs/api/media.html) — Truy vấn Kho Lưu Trữ Ảnh/Video, File, Link của nhóm và Cloud của tôi (Send2Me), cùng chuyển đổi Voice-to-Text AI.
+   - `api.sticker` (24 APIs): [Nhãn dán, GIF Giphy/Guggy & Hiệu ứng (Sticker)](https://softtyos.github.io/zca-js-docs/api/sticker.html) — Tìm kiếm nhãn dán, danh mục nhãn dán V2, nhãn dán gợi ý theo ngữ cảnh, kho ảnh động GIF (Giphy, Guggy, Tenor) và hiệu ứng tin nhắn nền (Message Effects).
+   - `api.board` (38 APIs): [Bảng tin, Bình chọn, Lịch hẹn & Zalo To-Do (Board)](https://softtyos.github.io/zca-js-docs/api/board.html) — Quản lý Tin ghim (Pin Topics), Ghi chú nhóm (Notes), Bình chọn (Polls), Lịch hẹn nhóm & 1-1 (Reminders), Bảng tin bạn bè và Giao việc Zalo To-Do.
+   - `api.business` (36 APIs): [Zalo Business, OA, Nhãn CRM & Danh mục (Business)](https://softtyos.github.io/zca-js-docs/api/business.html) — Quản lý Zalo Official Account (getOAProfile, blockOA, unblockOA, convertOAIds), Nhãn phân loại hội thoại CRM (Labels), Tin nhắn nhanh (Quick Messages), Trả lời tự động (Auto Reply), Danh mục sản phẩm (Catalog) và Ngân hàng.
+
+2. **Bảo toàn số nguyên 64-bit (`preParseJsonIds` & `ws-cipher` `storeAsString`)**: Tự động chuyển các trường ID 16+ chữ số không ngoặc kép (`owner_id`, `group_id`, `globalMsgId`, `cliMsgId`) thành `string` trước khi `JSON.parse()` để không bị làm tròn IEEE-754.
+3. **Quản lý Phiên & Timeout**: Hỗ trợ `api.auth.exportSession()` để lưu/khôi phục phiên đăng nhập và `requestTimeout` (mặc định 30s) bảo vệ kết nối.
+4. **Đồng bộ Mobile ZDB 4.0 (`api.sync`)**: Giải mã RSA-2048 OAEP/PKCS1 + ZDB 4.0 64KB multi-chunk AES-256-CBC + Deflate, cùng `getBackupMsgInfo`, `getCrossDbInfo`, `syncActionMedia`.
+5. **ZCloud & ZFamily (`api.zcloud`)**: Tích hợp chuẩn mã hóa `98yS` AES-256-CBC 16-byte random IV, tự động cache `viewer_key`, lấy link tải hàng loạt (`getZCloudDownloadUrls`), quản lý hàng đợi và di chuyển dữ liệu.
+6. **Zalo Call Engine 2 Chiều (`api.call` — 30 APIs & `ZaloRtcSession`)**: Gọi Thoại / Video 1-1 và Gọi Nhóm (Zavi SFU) 2 chiều thuần TypeScript (UDP `ZRTPPacket` + `SRTP` + `Opus 16kHz` + `H.264 Annex-B FU-A 0x1c` + `0xBEDE` 24-byte extension + `CSRC[0]` multi-partner demuxing + Mobile Direct UDP Handoff).
+7. **Zalo Official Account & Nhãn CRM (`api.business` & `oa_message`)**: Lấy hồ sơ tích vàng (`getOAProfile`), chặn/bỏ chặn OA (`blockOA`/`unblockOA`), chuyển đổi OA ID (`convertOAIds`), quản lý Nhãn CRM (`getConversationLabels`, `updateConversationLabels`) và nhận/trả lời tin nhắn OA thời gian thực (`oa_message`, `oa_event`, `footerv2`).
+8. **Zalo AI Dịch Đa Ngôn Ngữ (`api.chat`)**: Dịch tin nhắn thủ công (`translateMessageManual`), tự động (`translateMessageAuto`), gợi ý dịch (`getTranslateSuggestion`) và đồng bộ cấu hình dịch (`getTranslateSetting`, `updateTranslateSetting`).
+9. **Zalo To-Do, Nhắc Hẹn 1-1 & Bảng Tin Nhóm (`api.board`)**: Tạo/cập nhật/theo dõi công việc Zalo To-Do (`createTodo`, `updateTodo`, `updateTodoStatus`, `getTodoList`, `verifyTodo`), nhắc hẹn 1-1 (`getListOneOneBoard`) và bảng tin bạn bè (`getFriendBoardList`).
+10. **18 Sự Kiện WebSocket Realtime & 4 Phương Thức Điều Khiển Chủ Động (`api.listener`)**: Hỗ trợ `message`, `oa_message`, `oa_event`, `reaction`, `undo`, `typing`, `seen_messages`, `delivered_messages`, `group_event`, `friend_event`, `call_event`, `sync_event`, `zcloud_event`, `todo_event`, `poll_event`, `translate_event`, `emoji_status_event`, `online_status_event`, `control_sync_event` cùng `sendPingActive()`, `requestLastDeliverSeen()`, `requestLastSeenSubChatTab()`, `requestLastSeenReaction()`.
+
+## Liên kết Tài liệu Chính
+- [Bắt đầu nhanh (Getting Started)](https://softtyos.github.io/zca-js-docs/guide/getting-started.html)
+- [Kịch bản Thực chiến (Cookbook & Best Practices)](https://softtyos.github.io/zca-js-docs/guide/cookbook.html)
+- [Hướng dẫn Gọi Thoại, Video 1-1 & Gọi Nhóm 2 Chiều (ZaloRtcSession)](https://softtyos.github.io/zca-js-docs/guide/call-engine.html)
+- [Kiến trúc 12 Domains & 64-bit ID](https://softtyos.github.io/zca-js-docs/guide/architecture.html)
+- [Lắng nghe sự kiện WebSocket (Listener)](https://softtyos.github.io/zca-js-docs/guide/listeners.html)
+- [Tra cứu toàn bộ 333 API (API Explorer)](https://softtyos.github.io/zca-js-docs/api/)
+- [Tra cứu Models, Enums & Errors](https://softtyos.github.io/zca-js-docs/api/models.html)
+- [Bản đầy đủ toàn bộ chữ ký hàm & Types cho AI Agent (llms-full.txt)](https://softtyos.github.io/zca-js-docs/llms-full.txt)

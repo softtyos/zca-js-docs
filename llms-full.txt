@@ -1,0 +1,5209 @@
+# @softtynet/zca-js v2.3.12 — Full AI/LLM Technical Reference (333 APIs across 12 Domains)
+
+Maintained by Softtynet Co., Ltd. | Docs: https://softtyos.github.io/zca-js-docs/ | NPM: npm install @softtynet/zca-js
+
+---
+
+## Domain: Xác thực & Phiên (Auth) (`api.auth` — 14 APIs)
+Quản lý thiết bị đăng nhập, xuất/nhập phiên (exportSession), mã QR, Keep-Alive, đổi mật khẩu, E2EE và giải mã GID (Global ID) / Noised ID.
+
+### decryptGids
+- **Call**: `await api.auth.decryptGids(gids: string | string[])` (or `await api.decryptGids(gids: string | string[])`)
+- **Endpoint**: GET /api/gid/decrypt
+- **Description**: Giải mã danh sách Global ID (g_...) ẩn danh thành User ID thật (tương ứng hàm getUidFromGlobalNoiseId / command 12054 trên Zalo PC)
+```ts
+export type DecryptGidsResponse = {
+    data?: Record<string, string>;
+    gids?: Record<string, string>;
+    [key: string]: unknown;
+};
+```
+
+### encryptGids
+- **Call**: `await api.auth.encryptGids(uids: string[])` (or `await api.encryptGids(uids: string[])`)
+- **Endpoint**: GET /api/gid/encrypt
+- **Description**: Mã hóa danh sách UID thật sang định danh ẩn danh Global Noise ID (OTDAKO...) (command 12053)
+```ts
+export type EncryptGidsResponse = {
+    data: Record<string, string>;
+};
+```
+
+### exportSession
+- **Call**: `await api.auth.exportSession()` (or `await api.exportSession()`)
+- **Description**: Xuất toàn bộ thông tin phiên đăng nhập hiện tại (uid, imei, userAgent, language, cookie) dưới định dạng chuẩn Credentials để lưu trữ (JSON/Database) và truyền trực tiếp vào zalo.login(session).
+```ts
+export type ExportedSession = Credentials & {
+    uid: string;
+    cookie: toughCookie.SerializedCookie[];
+};
+```
+
+### getContext
+- **Call**: `await api.auth.getContext()` (or `await api.getContext()`)
+- **Description**: API getContext thuộc phân hệ auth.
+
+### getCookie
+- **Call**: `await api.auth.getCookie()` (or `await api.getCookie()`)
+- **Description**: Get the current cookie string
+
+### getListDevice
+- **Call**: `await api.auth.getListDevice()` (or `await api.getListDevice()`)
+- **Endpoint**: GET /api/devices/linked
+- **Description**: Lấy danh sách các thiết bị đang đăng nhập tài khoản Zalo hiện tại.
+```ts
+export type GetListDeviceResponse = {
+    devices: {
+        masterId: string;
+        encIdentity: string;
+        lastUpdateTs: number;
+        encSignature: string;
+        companions: unknown[]; // @TODO check type later
+    };
+};
+```
+
+### getNoisedIds
+- **Call**: `await api.auth.getNoisedIds({ fids = [], gids = [] }: GetNoisedIdsParams)` (or `await api.getNoisedIds({ fids = [], gids = [] }: GetNoisedIdsParams)`)
+- **Endpoint**: GET /api/znoise
+- **Description**: Chuyển đổi danh sách UID cá nhân (fids) và GID nhóm (gids) dạng số thuần (từ SQLite ZDB4.0 mobile) sang định dạng Noised ID 19 chữ số dùng trên Zalo Web/PC (getNoisedUids, command 12390). Tự động fallback sang https://zwid.api.zalo.me/api/znoise nếu profile domain trả về lỗi.
+```ts
+export type GetNoisedIdsParams = {
+    fids?: Array<string | number>;
+    gids?: Array<string | number>;
+};
+
+export type GetNoisedIdsResponse = {
+    fids: string[];
+    gids: string[];
+};
+```
+
+### getOwnId
+- **Call**: `await api.auth.getOwnId()` (or `await api.getOwnId()`)
+- **Description**: API getOwnId thuộc phân hệ auth.
+
+### getQR
+- **Call**: `await api.auth.getQR(userId: string | string[])` (or `await api.getQR(userId: string | string[])`)
+- **Endpoint**: POST /api/friend/mget-qr
+- **Description**: Lấy mã QR của danh sách người dùng theo UID.
+```ts
+export type GetQRResponse = {
+    [userId: string]: string;
+};
+```
+
+### keepAlive
+- **Call**: `await api.auth.keepAlive()` (or `await api.keepAlive()`)
+- **Endpoint**: GET /keepalive
+- **Description**: Gửi tín hiệu duy trì phiên kết nối HTTP tới máy chủ Chat (KeepAlive - command 11770)
+```ts
+export type KeepAliveResponse = {
+    config_vesion?: number;
+    [key: string]: unknown;
+};
+```
+
+### lostFocus
+- **Call**: `await api.auth.lostFocus()` (or `await api.lostFocus()`)
+- **Endpoint**: POST /api/social/profile/changefgtobg
+- **Description**: Gửi tín hiệu thông báo ứng dụng chuyển sang chế độ chạy nền (Background).
+```ts
+export type LostFocusResponse = {
+    status: boolean;
+};
+```
+
+### scanURL
+- **Call**: `await api.auth.scanURL(url: string)` (or `await api.scanURL(url: string)`)
+- **Endpoint**: POST /api/message/scanurl
+- **Description**: Quét và kiểm tra độ an toàn của đường dẫn URL thông qua bộ lọc bảo mật Zalo.
+```ts
+export type ScanURLResponse = {
+    isSafe: boolean;
+};
+```
+
+### updateActiveStatus
+- **Call**: `await api.auth.updateActiveStatus(active: boolean)` (or `await api.updateActiveStatus(active: boolean)`)
+- **Endpoint**: GET /api/social/profile/ping, /api/social/profile/deactive
+- **Description**: Cập nhật trạng thái hoạt động (Online / Offline / Ping) của tài khoản.
+```ts
+export type UpdateActiveStatusResponse = {
+    status: boolean;
+};
+```
+
+### updateLang
+- **Call**: `await api.auth.updateLang(language: UpdateLangAvailableLanguages = UpdateLangAvailableLanguages.VI)` (or `await api.updateLang(language: UpdateLangAvailableLanguages = UpdateLangAvailableLanguages.VI)`)
+- **Endpoint**: GET /api/social/profile/updatelang
+- **Description**: Cập nhật ngôn ngữ hiển thị của phiên tài khoản Zalo.
+```ts
+export enum UpdateLangAvailableLanguages {
+    VI = "VI",
+    EN = "EN",
+}
+
+export type UpdateLangResponse = "";
+```
+
+## Domain: Tin nhắn, Hội thoại & Dịch AI (Chat) (`api.chat` — 52 APIs)
+Gửi/nhận tin nhắn văn bản, ảnh, video, voice, card, thu hồi tin nhắn, Dịch đa ngôn ngữ bằng Zalo AI, đánh dấu tin nhắn quan trọng, chặn chia sẻ và trạng thái Đã nhận/Đã xem.
+
+### addReaction
+- **Call**: `await api.chat.addReaction(icon: Reactions | CustomReaction, dest: AddReactionDestination)` (or `await api.addReaction(icon: Reactions | CustomReaction, dest: AddReactionDestination)`)
+- **Endpoint**: POST /api/message/reaction, /api/group/reaction
+- **Description**: Thả biểu cảm (Reaction: Tim, Like, Haha, Wow, Buồn, Giận) vào một tin nhắn cá nhân hoặc nhóm.
+```ts
+export type AddReactionResponse = {
+    msgIds: number[];
+};
+
+export type CustomReaction = {
+    rType: number;
+    source: number;
+    icon: string;
+};
+
+export type AddReactionDestination = {
+    data: {
+        msgId: string;
+        cliMsgId: string;
+    };
+    threadId: string;
+    type: ThreadType;
+};
+```
+
+### addUnreadMark
+- **Call**: `await api.chat.addUnreadMark(threadId: string, type: ThreadType = ThreadType.User)` (or `await api.addUnreadMark(threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/conv/addUnreadMark
+- **Description**: Đánh dấu hội thoại là chưa đọc (Unread).
+```ts
+export type AddUnreadMarkResponse = {
+    data: {
+        updateId: number;
+    };
+    status: number;
+};
+```
+
+### deleteChat
+- **Call**: `await api.chat.deleteChat(lastMessage: DeleteChatLastMessage, threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.deleteChat(lastMessage: DeleteChatLastMessage, threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/message/deleteconver, /api/group/deleteconver
+- **Description**: Xóa lịch sử cuộc trò chuyện cá nhân hoặc nhóm ở phía tài khoản hiện tại.
+```ts
+export type DeleteChatResponse = {
+    status: number;
+};
+
+export type DeleteChatLastMessage = {
+    /**
+     * Last message owner ID to delete backwards
+     */
+    ownerId: string;
+    /**
+     * Last message client ID to delete backwards
+     */
+    cliMsgId: string;
+    /**
+     * Last message global ID to delete backwards
+     */
+    globalMsgId: string;
+};
+```
+
+### deleteMessage
+- **Call**: `await api.chat.deleteMessage(dest: DeleteMessageDestination, onlyMe = false)` (or `await api.deleteMessage(dest: DeleteMessageDestination, onlyMe = false)`)
+- **Endpoint**: POST /api/message/delete, /api/group/deletemsg
+- **Description**: Xóa một tin nhắn cụ thể (chỉ xóa ở phía tôi hoặc thu hồi).
+```ts
+export type DeleteMessageResponse = {
+    status: number;
+};
+
+export type DeleteMessageDestination = {
+    data: {
+        cliMsgId: string;
+        msgId: string;
+        uidFrom: string;
+    };
+    threadId: string;
+    type?: ThreadType;
+};
+```
+
+### fetchImportantMessages
+- **Call**: `await api.chat.fetchImportantMessages(options: FetchImportantMessagesOptions = {})` (or `await api.fetchImportantMessages(options: FetchImportantMessagesOptions = {})`)
+- **Endpoint**: GET /api/message/fetchImportant
+- **Description**: Lấy danh sách các tin nhắn được đánh dấu quan trọng / đánh dấu sao (command 12114)
+```ts
+export type FetchImportantMessagesOptions = {
+    limit?: number;
+    newestId?: string | null;
+    lastId?: string | null;
+};
+
+export type FetchImportantMessagesResponse = Record<string, unknown>;
+```
+
+### forwardMessage
+- **Call**: `await api.chat.forwardMessage(payload: ForwardMessagePayload, threadIds: string[], type: ThreadType = ThreadType.User,)` (or `await api.forwardMessage(payload: ForwardMessagePayload, threadIds: string[], type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/message/mforward, /api/group/mforward
+- **Description**: Chuyển tiếp (Forward) tin nhắn văn bản hoặc đính kèm tới nhiều hội thoại cùng lúc.
+```ts
+export type ForwardMessagePayload = {
+    message: string;
+    ttl?: number;
+    reference?: {
+        id: string;
+        ts: number;
+        logSrcType: number;
+        fwLvl: number;
+    };
+};
+
+export type ForwardMessageSuccess = {
+    clientId: string;
+    msgId: string;
+};
+
+export type ForwardMessageFail = {
+    clientId: string;
+    error_code: string;
+};
+
+export type ForwardMessageResponse = {
+    success: ForwardMessageSuccess[];
+    fail: ForwardMessageFail[];
+};
+```
+
+### getArchivedChatList
+- **Call**: `await api.chat.getArchivedChatList()` (or `await api.getArchivedChatList()`)
+- **Endpoint**: GET /api/archivedchat/list
+- **Description**: Lấy danh sách các hội thoại đã được lưu trữ (Archived Chats).
+```ts
+export type GetArchivedChatListResponse = {
+    items: unknown[]; // @TODO: check type
+    version: number;
+};
+```
+
+### getAutoDeleteChat
+- **Call**: `await api.chat.getAutoDeleteChat()` (or `await api.getAutoDeleteChat()`)
+- **Endpoint**: GET /api/conv/autodelete/getConvers
+- **Description**: Lấy danh sách các hội thoại đang bật chế độ tin nhắn tự xóa.
+```ts
+export type GetAutoDeleteChatResponse = {
+    convers: {
+        destId: string;
+        isGroup: boolean;
+        ttl: number;
+        createdAt: number;
+    }[];
+};
+```
+
+### getBlockSharingConversations
+- **Call**: `await api.chat.getBlockSharingConversations()` (or `await api.getBlockSharingConversations()`)
+- **Endpoint**: GET /api/conv/blocksharing/getConvers
+- **Description**: Lấy danh sách hội thoại đang bật chế độ chặn chia sẻ / chuyển tiếp tin nhắn (command 12178)
+```ts
+export type GetBlockSharingConversationsResponse = {
+    convers?: unknown[];
+    [key: string]: unknown;
+};
+```
+
+### getConvOfflineMessages
+- **Call**: `await api.chat.getConvOfflineMessages(options: GetConvOfflineMessagesOptions)` (or `await api.getConvOfflineMessages(options: GetConvOfflineMessagesOptions)`)
+- **Endpoint**: GET /api/conv/cm/grOfl
+- **Description**: Lấy danh sách hội thoại nhóm có tin nhắn ngoại tuyến mới (command 12300)
+```ts
+export type GetConvOfflineMessagesOptions = {
+    queueInfo: unknown;
+    lastMsgId?: string | number;
+    lastActId?: string | number;
+};
+
+export type GetConvOfflineMessagesResponse = Record<string, unknown>;
+```
+
+### getDirectMessageStatus
+- **Call**: `await api.chat.getDirectMessageStatus(data: Array<string | { tId: string; [key: string]: unknown }>)` (or `await api.getDirectMessageStatus(data: Array<string | { tId: string; [key: string]: unknown }>)`)
+- **Endpoint**: POST /api/message/getStatusMsg
+- **Description**: Truy vấn trạng thái Đã nhận (deliver) và Đã xem (seen) tin nhắn trong các hội thoại cá nhân 1-1 (command 12016)
+```ts
+export type DirectMessageStatusItem = {
+    tId: string;
+    seen?: string | number;
+    deliver?: string | number;
+    [key: string]: unknown;
+};
+
+export type GetDirectMessageStatusResponse = {
+    statusInfos: DirectMessageStatusItem[];
+    [key: string]: unknown;
+};
+```
+
+### getHiddenConversations
+- **Call**: `await api.chat.getHiddenConversations()` (or `await api.getHiddenConversations()`)
+- **Endpoint**: GET /api/hiddenconvers/get-all
+- **Description**: Lấy danh sách các cuộc trò chuyện đang được ẩn bằng mã PIN.
+```ts
+export type GetHiddenConversationsResponse = {
+    pin: string;
+    threads: {
+        /**
+         * 1: true, 0: false
+         */
+        is_group: number;
+        thread_id: string;
+    }[];
+};
+```
+
+### getLastSeen
+- **Call**: `await api.chat.getLastSeen(options: GetLastSeenOptions = {})` (or `await api.getLastSeen(options: GetLastSeenOptions = {})`)
+- **Endpoint**: GET /api/preloadconvers/get-last-seen
+- **Description**: Lấy thông tin trạng thái đã xem cuối cùng của danh sách nhóm và cá nhân (command 12009)
+```ts
+export type GetLastSeenOptions = {
+    groupIds?: string[];
+    userIds?: string[];
+};
+
+export type GetLastSeenResponse = {
+    clearUnreadInfo?: Record<string, unknown>[];
+    data?: string;
+    status?: number;
+    [key: string]: unknown;
+};
+```
+
+### getLastSeenReaction
+- **Call**: `await api.chat.getLastSeenReaction(options: GetLastSeenReactionOptions = {})` (or `await api.getLastSeenReaction(options: GetLastSeenReactionOptions = {})`)
+- **Endpoint**: GET /api/react/gLastSn
+- **Description**: Lấy trạng thái đã xem cảm xúc (Reaction) cuối cùng của danh sách nhóm và cá nhân (command 12450)
+```ts
+export type GetLastSeenReactionOptions = {
+    groupIds?: string[];
+    userIds?: string[];
+};
+
+export type GetLastSeenReactionResponse = {
+    clearUnreadInfo: Record<string, unknown>[];
+    [key: string]: unknown;
+};
+```
+
+### getMute
+- **Call**: `await api.chat.getMute()` (or `await api.getMute()`)
+- **Endpoint**: GET /api/social/profile/getmute
+- **Description**: Lấy danh sách các cuộc trò chuyện đang tắt thông báo (Mute).
+```ts
+export type MuteEntriesInfo = {
+    id: string;
+    duration: number;
+    startTime: number;
+    systemTime: number;
+    currentTime: number;
+    muteMode: number;
+};
+
+export type GetMuteResponse = {
+    chatEntries: MuteEntriesInfo[];
+    groupChatEntries: MuteEntriesInfo[];
+};
+```
+
+### getPinConversations
+- **Call**: `await api.chat.getPinConversations()` (or `await api.getPinConversations()`)
+- **Endpoint**: GET /api/pinconvers/list
+- **Description**: Lấy danh sách các cuộc trò chuyện đang được ghim trên đầu danh sách chat.
+```ts
+export type GetPinConversationsResponse = {
+    conversations: string[];
+    version: number;
+};
+```
+
+### getRecentSearchList
+- **Call**: `await api.chat.getRecentSearchList(version: number = 0)` (or `await api.getRecentSearchList(version: number = 0)`)
+- **Endpoint**: GET /api/recentsearch/list
+- **Description**: Lấy danh sách lịch sử tìm kiếm gần đây trên Zalo (command 12125)
+```ts
+export type GetRecentSearchListResponse = {
+    version: number;
+    list_recent: Record<string, unknown>[];
+    list_keyword: string[];
+};
+```
+
+### getSuggestedConversations
+- **Call**: `await api.chat.getSuggestedConversations(language?: string)` (or `await api.getSuggestedConversations(language?: string)`)
+- **Endpoint**: GET /api/suggestconvers/list
+- **Description**: Lấy danh sách các cuộc hội thoại được gợi ý (command 11233)
+```ts
+export type GetSuggestedConversationsResponse = {
+    conversations?: unknown[];
+    [key: string]: unknown;
+};
+```
+
+### getTranslateSetting
+- **Call**: `await api.chat.getTranslateSetting()` (or `await api.getTranslateSetting()`)
+- **Endpoint**: GET /api/aifeatures/translate/v1/setting
+- **Description**: Lấy cấu hình tính năng dịch tin nhắn tự động bằng Zalo AI (command 13395)
+```ts
+export type GetTranslateSettingResponse = {
+    info?: unknown[];
+    version?: number;
+    [key: string]: unknown;
+};
+```
+
+### getUnreadMark
+- **Call**: `await api.chat.getUnreadMark()` (or `await api.getUnreadMark()`)
+- **Endpoint**: GET /api/conv/getUnreadMark
+- **Description**: Lấy danh sách các cuộc trò chuyện đang được đánh dấu là chưa đọc.
+```ts
+export type UnreadMark = {
+    id: number;
+    cliMsgId: number;
+    fromUid: number;
+    ts: number;
+};
+
+export type GetUnreadMarkResponse = {
+    data: {
+        convsGroup: UnreadMark[];
+        convsUser: UnreadMark[];
+    };
+    status: number;
+};
+```
+
+### markSubTabSeen
+- **Call**: `await api.chat.markSubTabSeen(seens: unknown[])` (or `await api.markSubTabSeen(seens: unknown[])`)
+- **Endpoint**: POST /api/subtab/seen
+- **Description**: Đánh dấu đã xem các tab phụ của danh sách hội thoại (command 16214)
+```ts
+export type MarkSubTabSeenResponse = {
+    status?: number;
+    [key: string]: unknown;
+};
+```
+
+### parseLink
+- **Call**: `await api.chat.parseLink(link: string)` (or `await api.parseLink(link: string)`)
+- **Endpoint**: GET /api/message/parselink
+- **Description**: Phân tích siêu dữ liệu (Title, Description, Thumbnail) của một đường dẫn URL trước khi gửi.
+```ts
+export type ParseLinkErrorMaps = Record<string, number>;
+
+export type ParseLinkResponse = {
+    data: {
+        thumb: string;
+        title: string;
+        desc: string;
+        src: string;
+        href: string;
+        media: {
+            type: number;
+            count: number;
+            mediaTitle: string;
+            artist: string;
+            streamUrl: string;
+            stream_icon: string;
+        };
+        stream_icon: string;
+    };
+    error_maps: ParseLinkErrorMaps;
+};
+```
+
+### preloadConversations
+- **Call**: `await api.chat.preloadConversations(threadIdLocalMsgId: Record<string, string | number> = {})` (or `await api.preloadConversations(threadIdLocalMsgId: Record<string, string | number> = {})`)
+- **Endpoint**: GET /api/preloadconvers/get-last-msgs
+- **Description**: Tải trước tin nhắn cuối cùng và trạng thái đã đọc của các hội thoại đang hoạt động (command 10053).
+```ts
+export type PreloadConversationsRawResponse = {
+    msgs?: TMessage[];
+    groupMsgs?: TGroupMessage[];
+    allmsgs?: Array<TMessage | (TGroupMessage & { isGroup?: boolean | number })>;
+    eeMsgs?: unknown[];
+    pageMsgs?: TMessage[];
+    clearUnreads?: TClearUnreadItem[];
+    clearUnreadsReact?: TClearUnreadItem[];
+    seens?: unknown[];
+    lastActionId?: string;
+    lastActionIdOther?: string;
+    more?: number;
+    conversations?: Array<{
+        conv_id: string;
+        last_msgs?: unknown[];
+        unread_count?: number;
+        [key: string]: unknown;
+    }>;
+    [key: string]: unknown;
+};
+
+export type PreloadConversationsResponse = PreloadConversationsRawResponse & {
+    messages: Message[];
+    pageMessages: UserMessage[];
+    unreadCleared: ClearUnread[];
+};
+```
+
+### removeUnreadMark
+- **Call**: `await api.chat.removeUnreadMark(threadId: string, type: ThreadType = ThreadType.User)` (or `await api.removeUnreadMark(threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/conv/removeUnreadMark
+- **Description**: Gỡ bỏ đánh dấu chưa đọc trên cuộc trò chuyện.
+```ts
+export type RemoveUnreadMarkResponse = {
+    data: {
+        updateId: number;
+    };
+    status: number;
+};
+```
+
+### renewMessageLink
+- **Call**: `await api.chat.renewMessageLink(options: RenewMessageLinkOptions)` (or `await api.renewMessageLink(options: RenewMessageLinkOptions)`)
+- **Endpoint**: POST /api/message/renewlink
+- **Description**: Gia hạn đường dẫn tải tệp đính kèm / đa phương tiện đã hết hạn trong tin nhắn (command 12094)
+```ts
+export type RenewMessageLinkOptions = {
+    toId: string;
+    msgType: number;
+    msgInfo: Record<string, unknown>;
+    clientId?: string | number;
+    isGroup?: boolean;
+};
+
+export type RenewMessageLinkResponse = Record<string, unknown>;
+```
+
+### resetHiddenConversPin
+- **Call**: `await api.chat.resetHiddenConversPin()` (or `await api.resetHiddenConversPin()`)
+- **Endpoint**: GET /api/hiddenconvers/reset
+- **Description**: Đặt lại (Reset) mã PIN bảo vệ trò chuyện ẩn.
+```ts
+export type ResetHiddenConversPinResponse = "";
+```
+
+### sendBankCard
+- **Call**: `await api.chat.sendBankCard(payload: SendBankCardPayload, threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.sendBankCard(payload: SendBankCardPayload, threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/transfer/card
+- **Description**: Gửi danh thiếp thông tin tài khoản ngân hàng (Bank Card) vào cuộc trò chuyện.
+```ts
+export type SendBankCardPayload = {
+    binBank: BinBankCard;
+    numAccBank: string;
+    nameAccBank?: string;
+};
+
+export type SendBankCardResponse = "";
+```
+
+### sendCard
+- **Call**: `await api.chat.sendCard(options: SendCardOptions, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.sendCard(options: SendCardOptions, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/message/forward, /api/group/forward
+- **Description**: Gửi danh thiếp liên hệ Zalo (Contact Card / QR) vào hội thoại cá nhân hoặc nhóm.
+```ts
+export type SendCardOptions = {
+    userId: string;
+    phoneNumber?: string;
+    ttl?: number;
+};
+
+export type SendCardResponse = {
+    msgId: number;
+};
+```
+
+### sendDeliveredEvent
+- **Call**: `await api.chat.sendDeliveredEvent(isSeen: boolean, messages: SendDeliveredEventMessageParams | SendDeliveredEventMessageParams[], type: ThreadType = ThreadType.User,)` (or `await api.sendDeliveredEvent(isSeen: boolean, messages: SendDeliveredEventMessageParams | SendDeliveredEventMessageParams[], type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/message/deliveredv2, /api/group/deliveredv2
+- **Description**: Gửi tín hiệu xác nhận Đã nhận (Delivered) cho một hoặc nhiều tin nhắn.
+```ts
+export type SendDeliveredEventResponse = "" | { status: number };
+
+export type SendDeliveredEventMessageParams = {
+    msgId: string;
+    cliMsgId: string;
+    uidFrom: string;
+    idTo: string;
+    msgType: string;
+    st: number;
+    at: number;
+    cmd: number;
+    ts: string | number;
+};
+
+type RequestMessageParams = {
+    gmi: string;
+    cmi: string;
+    si: string;
+    di: string;
+    mt: string;
+    st: number;
+    at: number;
+    cmd: number;
+    ts: number;
+};
+
+type MsgInfos = {
+    seen: number;
+    data: RequestMessageParams[];
+    grid?: string; // Optional, any random value works
+};
+```
+
+### sendLink
+- **Call**: `await api.chat.sendLink(options: SendLinkOptions, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.sendLink(options: SendLinkOptions, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/message/link, /api/group/sendlink
+- **Description**: Gửi tin nhắn kèm bản xem trước liên kết (Link Preview) vào hội thoại.
+```ts
+export type SendLinkOptions = {
+    msg?: string;
+    link: string;
+    ttl?: number;
+};
+
+export type SendLinkResponse = {
+    msgId: string;
+};
+```
+
+### sendMessage
+- **Call**: `await api.chat.sendMessage(message: MessageContent | string, threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.sendMessage(message: MessageContent | string, threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/message, /api/group, /api/message/, /api/group/
+- **Description**: Gửi tin nhắn văn bản, trích dẫn (Quote), nhắc tên (@Mention) hoặc tệp đính kèm (Ảnh/File/GIF) tới cá nhân hoặc nhóm.
+```ts
+export type SendMessageResult = {
+    msgId: number;
+};
+
+export type SendMessageResponse = {
+    message: SendMessageResult | null;
+    attachment: SendMessageResult[];
+};
+
+export type SendMessageQuote = {
+    content: TMessage["content"];
+    msgType: TMessage["msgType"];
+    propertyExt: TMessage["propertyExt"];
+
+    uidFrom: TMessage["uidFrom"];
+    msgId: TMessage["msgId"];
+    cliMsgId: TMessage["cliMsgId"];
+    ts: TMessage["ts"];
+    ttl: TMessage["ttl"];
+};
+
+export enum TextStyle {
+    Bold = "b",
+    Italic = "i",
+    Underline = "u",
+    StrikeThrough = "s",
+    Red = "c_db342e",
+    Orange = "c_f27806",
+    Yellow = "c_f7b503",
+    Green = "c_15a85f",
+    Small = "f_13",
+    Big = "f_18",
+    UnorderedList = "lst_1",
+    OrderedList = "lst_2",
+    Indent = "ind_$",
+}
+
+export type Style =
+    | {
+          start: number;
+          len: number;
+          st: Exclude<TextStyle, TextStyle.Indent>;
+      }
+    | {
+          start: number;
+          len: number;
+          st: TextStyle.Indent;
+          /**
+           * Number of spaces used for indentation.
+           */
+          indentSize?: number;
+      };
+
+export enum Urgency {
+    Default,
+    Important,
+    Urgent,
+}
+
+export type Mention = {
+    /**
+     * mention position
+     */
+    pos: number;
+    /**
+     * id of the mentioned user
+     */
+    uid: string;
+    /**
+     * length of the mention
+     */
+    len: number;
+};
+
+export type MessageContent = {
+    /**
+     * Text content of the message
+     */
+    msg: string;
+    /**
+     * Text styles
+     */
+    styles?: Style[];
+    /**
+     * Urgency of the message
+     */
+    urgency?: Urgency;
+    /**
+     * Quoted message (optional)
+     */
+    quote?: SendMessageQuote;
+    /**
+     * Mentions in the message (optional)
+     */
+    mentions?: Mention[];
+    /**
+     * Attachments in the message (optional)
+     */
+    attachments?: AttachmentSource | AttachmentSource[];
+    /**
+     * Time to live in milliseconds
+     */
+    ttl?: number;
+};
+```
+
+### sendReport
+- **Call**: `await api.chat.sendReport(options: SendReportOptions, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.sendReport(options: SendReportOptions, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/report/abuse-v2, /api/social/profile/reportabuse
+- **Description**: Gửi báo cáo vi phạm (Report Abuse) đối với người dùng hoặc cuộc trò chuyện.
+```ts
+export enum ReportReason {
+    Sensitive = 1,
+    Annoy = 2,
+    Fraud = 3,
+    Other = 0,
+}
+
+export type SendReportOptions =
+    | {
+          reason: ReportReason.Other;
+          content: string;
+      }
+    | {
+          reason: Exclude<ReportReason, ReportReason.Other>;
+      };
+
+export type SendReportResponse = {
+    reportId: string;
+};
+```
+
+### sendSeenEvent
+- **Call**: `await api.chat.sendSeenEvent(messages: SendSeenEventMessageParams | SendSeenEventMessageParams[], type: ThreadType = ThreadType.User,)` (or `await api.sendSeenEvent(messages: SendSeenEventMessageParams | SendSeenEventMessageParams[], type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/message/seenv2, /api/group/seenv2
+- **Description**: Gửi tín hiệu xác nhận Đã xem (Seen) cho các tin nhắn trong hội thoại.
+```ts
+export type SendSeenEventResponse = {
+    status: number;
+};
+
+export type SendSeenEventMessageParams = {
+    msgId: string;
+    cliMsgId: string;
+    uidFrom: string;
+    idTo: string;
+    msgType: string;
+    st: number;
+    at: number;
+    cmd: number;
+    ts: string | number;
+};
+
+type RequestMessageParams = {
+    gmi: string;
+    cmi: string;
+    si: string;
+    di: string;
+    mt: string;
+    st: number;
+    at: number;
+    cmd: number;
+    ts: number;
+};
+
+type MsgInfos = {
+    data: RequestMessageParams[];
+    grid?: string;
+    senderId?: string;
+};
+```
+
+### sendSticker
+- **Call**: `await api.chat.sendSticker(sticker: SendStickerPayload, threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.sendSticker(sticker: SendStickerPayload, threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/message/sticker, /api/group/sticker
+- **Description**: Gửi nhãn dán (Sticker) vào cuộc trò chuyện cá nhân hoặc nhóm.
+```ts
+export type SendStickerPayload = {
+    id: number;
+    cateId: number;
+    type: number;
+};
+
+export type SendStickerResponse = {
+    msgId: number;
+};
+```
+
+### sendTypingEvent
+- **Call**: `await api.chat.sendTypingEvent(threadId: string, type: ThreadType = ThreadType.User, destType: DestType = DestType.User,)` (or `await api.sendTypingEvent(threadId: string, type: ThreadType = ThreadType.User, destType: DestType = DestType.User,)`)
+- **Endpoint**: POST /api/message/typing, /api/group/typing
+- **Description**: Gửi tín hiệu trạng thái Đang soạn tin nhắn (Typing...) tới người nhận hoặc nhóm.
+```ts
+export type SendTypingEventResponse = {
+    status: number;
+};
+```
+
+### sendVideo
+- **Call**: `await api.chat.sendVideo(options: SendVideoOptions, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.sendVideo(options: SendVideoOptions, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/message/forward, /api/group/forward
+- **Description**: Gửi tệp video kèm ảnh thu nhỏ (Thumbnail) và thời lượng vào hội thoại cá nhân hoặc nhóm.
+```ts
+export type SendVideoOptions = {
+    /**
+     * Optional message to send along with the video
+     */
+    msg?: string;
+    /**
+     * URL of the video
+     */
+    videoUrl: string;
+    /**
+     * URL of the thumbnail
+     */
+    thumbnailUrl: string;
+    /**
+     * Video duration in milliseconds || Eg: video duration: 5.5s => 5.5 * 1000 = 5500
+     */
+    duration?: number;
+    /**
+     * Width of the video
+     */
+    width?: number;
+    /**
+     * Height of the video
+     */
+    height?: number;
+    /**
+     * Time to live in milliseconds (default: 0)
+     */
+    ttl?: number;
+};
+
+export type SendVideoResponse = {
+    msgId: number;
+};
+```
+
+### sendVoice
+- **Call**: `await api.chat.sendVoice(options: SendVoiceOptions, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.sendVoice(options: SendVoiceOptions, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/message/forward, /api/group/forward
+- **Description**: Gửi tin nhắn thoại (Voice / Audio MP3 / AAC) vào hội thoại cá nhân hoặc nhóm.
+```ts
+export type SendVoiceOptions = {
+    voiceUrl: string;
+    /**
+     * Time to live in milliseconds (default: 0)
+     */
+    ttl?: number;
+};
+
+export type SendVoiceResponse = {
+    msgId: string;
+};
+```
+
+### setHiddenConversations
+- **Call**: `await api.chat.setHiddenConversations(hidden: boolean, threadId: string | string[], type: ThreadType = ThreadType.User,)` (or `await api.setHiddenConversations(hidden: boolean, threadId: string | string[], type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/hiddenconvers/add-remove
+- **Description**: Ẩn hoặc bỏ ẩn một hoặc nhiều cuộc trò chuyện bằng mã PIN.
+```ts
+export type SetHiddenConversationsResponse = "";
+```
+
+### setMute
+- **Call**: `await api.chat.setMute(params: SetMuteParams = {}, threadID: string, type: ThreadType = ThreadType.User)` (or `await api.setMute(params: SetMuteParams = {}, threadID: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/social/profile/setmute
+- **Description**: Bật hoặc tắt chế độ im lặng (Mute thông báo) cho cuộc trò chuyện theo khoảng thời gian.
+```ts
+export type SetMuteParams = {
+    /**
+     * Mute duration in seconds or predefined durations
+     */
+    duration?: MuteDuration | number;
+    action?: MuteAction;
+};
+
+export type SetMuteResponse = "";
+
+export enum MuteDuration {
+    ONE_HOUR = 3600,
+    FOUR_HOURS = 14400,
+    FOREVER = -1,
+    UNTIL_8AM = "until8AM",
+}
+
+export enum MuteAction {
+    MUTE = 1,
+    UNMUTE = 3, // khi tat thi duration = -1
+}
+```
+
+### setPinnedConversations
+- **Call**: `await api.chat.setPinnedConversations(pinned: boolean, threadId: string | string[], type: ThreadType = ThreadType.User,)` (or `await api.setPinnedConversations(pinned: boolean, threadId: string | string[], type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/pinconvers/updatev2
+- **Description**: Ghim hoặc bỏ ghim cuộc trò chuyện lên đầu danh sách.
+```ts
+export type SetPinnedConversationsResponse = "";
+```
+
+### translateMessage
+- **Call**: `await api.chat.translateMessage(options: TranslateMessageOptions)` (or `await api.translateMessage(options: TranslateMessageOptions)`)
+- **Endpoint**: POST /api/aifeatures/translate/v1/manual
+- **Description**: Dịch thủ công một tin nhắn văn bản bằng Zalo AI (command 13397)
+```ts
+export type TranslateMessageOptions = {
+    reqId?: string;
+    msgId: string;
+    threadId: string;
+    type?: number;
+    srcLang: string;
+    desLang: string;
+    text: string;
+    immutableItems?: unknown[];
+};
+
+export type TranslateMessageResponse = {
+    reqId?: string;
+    text?: string;
+    metadata?: {
+        immutableItems?: unknown[];
+    };
+    [key: string]: unknown;
+};
+```
+
+### translateMessageAuto
+- **Call**: `await api.chat.translateMessageAuto(options: TranslateMessageAutoOptions)` (or `await api.translateMessageAuto(options: TranslateMessageAutoOptions)`)
+- **Endpoint**: POST /api/aifeatures/translate/v1/auto
+- **Description**: Gửi yêu cầu dịch tự động hàng loạt tin nhắn đến bằng Zalo AI (command 13398). Kết quả dịch bất đồng bộ có thể được đẩy về qua sự kiện api.listener.on("translate_event", ...).
+```ts
+export type TranslateMessageAutoItem = {
+    text: string;
+    metadata: {
+        cmi: string;
+        gmi: string;
+        immutableItems?: unknown[];
+    };
+};
+
+export type TranslateMessageAutoOptions = {
+    reqId?: string;
+    threadId: string;
+    type?: number;
+    srcLang: string;
+    desLang: string;
+    msgs: TranslateMessageAutoItem[];
+};
+
+export type TranslateMessageAutoResponse = Record<string, unknown>;
+```
+
+### translateMessageSuggest
+- **Call**: `await api.chat.translateMessageSuggest(options: TranslateMessageSuggestOptions)` (or `await api.translateMessageSuggest(options: TranslateMessageSuggestOptions)`)
+- **Endpoint**: POST /api/aifeatures/translate/v1/suggest
+- **Description**: Gửi yêu cầu dịch gợi ý tin nhắn đang soạn thảo bằng Zalo AI (command 13399). Kết quả dịch bất đồng bộ có thể được đẩy về qua sự kiện api.listener.on("translate_event", ...).
+```ts
+export type TranslateMessageSuggestOptions = {
+    reqId?: string;
+    threadId: string;
+    type?: number;
+    srcLang: string;
+    desLang: string;
+    text: string;
+    immutableItems?: unknown[];
+};
+
+export type TranslateMessageSuggestResponse = Record<string, unknown>;
+```
+
+### undo
+- **Call**: `await api.chat.undo(payload: UndoPayload, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.undo(payload: UndoPayload, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/message/undo, /api/group/undomsg
+- **Description**: Thu hồi (Undo) một tin nhắn đã gửi với tất cả mọi người trong cuộc trò chuyện.
+```ts
+export type UndoPayload = {
+    msgId: string | number;
+    cliMsgId: string | number;
+};
+
+export type UndoResponse = {
+    status: number;
+};
+```
+
+### undoMultiMessage
+- **Call**: `await api.chat.undoMultiMessage(msgs: UndoMultiMessageItem[], threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.undoMultiMessage(msgs: UndoMultiMessageItem[], threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/group/multi_undomsg, /api/message/multi_undo
+- **Description**: Thu hồi hàng loạt nhiều tin nhắn cùng lúc trong hội thoại cá nhân hoặc nhóm (command 12115 / 12116)
+```ts
+export type UndoMultiMessageItem = {
+    globalMsgId: string | number;
+    cliMsgId: string | number;
+    cliMsgIdUndo?: string | number;
+    destId?: string;
+};
+
+export type UndoMultiMessageResponse = Record<string, unknown>;
+```
+
+### updateArchivedChatList
+- **Call**: `await api.chat.updateArchivedChatList(isArchived: boolean, conversations: UpdateArchivedChatListTarget | UpdateArchivedChatListTarget[],)` (or `await api.updateArchivedChatList(isArchived: boolean, conversations: UpdateArchivedChatListTarget | UpdateArchivedChatListTarget[],)`)
+- **Endpoint**: POST /api/archivedchat/update
+- **Description**: Đưa cuộc trò chuyện vào mục Lưu trữ (Archive) hoặc khôi phục ra ngoài.
+```ts
+export type UpdateArchivedChatListTarget = { id: string; type: ThreadType };
+
+export type UpdateArchivedChatListResponse = { needResync: boolean; version: number };
+```
+
+### updateAutoDeleteChat
+- **Call**: `await api.chat.updateAutoDeleteChat(ttl: ChatTTL, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.updateAutoDeleteChat(ttl: ChatTTL, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/conv/autodelete/updateConvers
+- **Description**: Cấu hình thời gian tự động xóa tin nhắn cho cuộc trò chuyện (1 ngày, 7 ngày, 30 ngày hoặc tắt).
+```ts
+export enum ChatTTL {
+    NO_DELETE = 0,
+    ONE_DAY = 86400000,
+    SEVEN_DAYS = 604800000,
+    FOURTEEN_DAYS = 1209600000,
+}
+
+export type UpdateAutoDeleteChatResponse = "";
+```
+
+### updateBlockSharingConversation
+- **Call**: `await api.chat.updateBlockSharingConversation(options: UpdateBlockSharingConversationOptions)` (or `await api.updateBlockSharingConversation(options: UpdateBlockSharingConversationOptions)`)
+- **Endpoint**: POST /api/conv/blocksharing/updateConvers
+- **Description**: Bật hoặc tắt chế độ chặn chia sẻ / chuyển tiếp tin nhắn trong một hội thoại (command 12179)
+```ts
+export type UpdateBlockSharingConversationOptions = {
+    threadId: string;
+    isGroup?: boolean;
+    isEnabled: boolean | number;
+    clientLang?: string;
+};
+
+export type UpdateBlockSharingConversationResponse = Record<string, unknown>;
+```
+
+### updateHiddenConversPin
+- **Call**: `await api.chat.updateHiddenConversPin(pin: string)` (or `await api.updateHiddenConversPin(pin: string)`)
+- **Endpoint**: GET /api/hiddenconvers/update-pin
+- **Description**: Đặt mới hoặc thay đổi mã PIN bảo mật cho tính năng Trò chuyện ẩn.
+```ts
+export type UpdateHiddenConversPinResponse = "";
+```
+
+### updatePinConversations
+- **Call**: `await api.chat.updatePinConversations(options: UpdatePinConversationsOptions)` (or `await api.updatePinConversations(options: UpdatePinConversationsOptions)`)
+- **Endpoint**: POST /api/pinconvers/updatev2, /api/pinconvers/update
+- **Description**: Cập nhật danh sách hội thoại ghim qua /api/pinconvers/update (command 12121) hoặc /api/pinconvers/updatev2 (command 12122)
+```ts
+export type UpdatePinConversationsOptions = {
+    /**
+     * Danh sách ID hội thoại cần ghim / bỏ ghim (prefix `g` cho nhóm hoặc UID cho cá nhân).
+     */
+    conversations: string[];
+    /**
+     * Loại thao tác khi dùng V2 (`1`: ghim, `2`: bỏ ghim). Nếu truyền `actionType`, API sẽ gọi `/api/pinconvers/updatev2` (cmd 12122).
+     */
+    actionType?: number;
+    /**
+     * Tab hội thoại khi dùng V2 (tùy chọn).
+     */
+    tab?: number;
+    /**
+     * Phiên bản danh sách ghim khi dùng V1 (`/api/pinconvers/update`, cmd 12121, mặc định: `0`).
+     */
+    version?: number;
+};
+
+export type UpdatePinConversationsResponse = {
+    version?: number;
+    conversations?: string[];
+    [key: string]: unknown;
+};
+```
+
+### updateRecentSearch
+- **Call**: `await api.chat.updateRecentSearch(options: UpdateRecentSearchOptions = {})` (or `await api.updateRecentSearch(options: UpdateRecentSearchOptions = {})`)
+- **Endpoint**: POST /api/recentsearch/update
+- **Description**: Cập nhật danh sách lịch sử tìm kiếm gần đây trên Zalo (command 12126)
+```ts
+export type UpdateRecentSearchOptions = {
+    listRecent?: Record<string, unknown>[];
+    listKeyword?: string[];
+    version?: number;
+};
+
+export type UpdateRecentSearchResponse = {
+    version: number;
+    list_recent: Record<string, unknown>[];
+    list_keyword: string[];
+};
+```
+
+### updateTranslateSetting
+- **Call**: `await api.chat.updateTranslateSetting(options: UpdateTranslateSettingOptions)` (or `await api.updateTranslateSetting(options: UpdateTranslateSettingOptions)`)
+- **Endpoint**: POST /api/aifeatures/translate/v1/setting
+- **Description**: Cập nhật cấu hình dịch tin nhắn Zalo AI cho một hội thoại (command 13396)
+```ts
+export type UpdateTranslateSettingOptions = {
+    threadId: string;
+    type: number;
+    settings: {
+        auto: boolean | number;
+        suggest: boolean | number;
+        srcLang: string;
+        desLang: string;
+    };
+    [key: string]: unknown;
+};
+
+export type UpdateTranslateSettingResponse = Record<string, unknown>;
+```
+
+## Domain: Nhóm & Cộng đồng (Group) (`api.group` — 46 APIs)
+Quản lý nhóm & Cộng đồng, lấy thông tin nhóm (V1/V2/V3/V4), lịch sử tin nhắn Cloud, trạng thái tin nhắn thành viên, chủ đề (Topic) và phân quyền.
+
+### addGroupBlockedMember
+- **Call**: `await api.group.addGroupBlockedMember(memberId: string | string[], groupId: string)` (or `await api.addGroupBlockedMember(memberId: string | string[], groupId: string)`)
+- **Endpoint**: GET /api/group/blockedmems/add
+- **Description**: Chặn một hoặc nhiều thành viên khỏi nhóm (không cho tham gia lại).
+```ts
+export type AddGroupBlockedMemberResponse = "";
+```
+
+### addGroupDeputy
+- **Call**: `await api.group.addGroupDeputy(memberId: string | string[], groupId: string)` (or `await api.addGroupDeputy(memberId: string | string[], groupId: string)`)
+- **Endpoint**: GET /api/group/admins/add
+- **Description**: Bổ nhiệm thành viên làm Phó nhóm (Quản trị viên).
+```ts
+export type AddGroupDeputyResponse = "";
+```
+
+### addUserToGroup
+- **Call**: `await api.group.addUserToGroup(memberId: string | string[], groupId: string)` (or `await api.addUserToGroup(memberId: string | string[], groupId: string)`)
+- **Endpoint**: POST /api/group/invite/v2
+- **Description**: Thêm trực tiếp một hoặc nhiều người dùng vào nhóm.
+```ts
+export type AddUserToGroupResponse = {
+    errorMembers: string[];
+    error_data: Record<string, string[]>;
+};
+```
+
+### analyseGroup
+- **Call**: `await api.group.analyseGroup(groupId: string)` (or `await api.analyseGroup(groupId: string)`)
+- **Endpoint**: GET /api/group/analyse
+- **Description**: Lấy dữ liệu phân tích/thống kê của nhóm qua /api/group/analyse (command 12407)
+```ts
+export type AnalyseGroupResponse = {
+    [key: string]: unknown;
+};
+```
+
+### changeGroupAvatar
+- **Call**: `await api.group.changeGroupAvatar(avatarSource: AttachmentSource, groupId: string)` (or `await api.changeGroupAvatar(avatarSource: AttachmentSource, groupId: string)`)
+- **Endpoint**: POST /api/group/upavatar
+- **Description**: Thay đổi ảnh đại diện (Avatar) của nhóm.
+```ts
+export type ChangeGroupAvatarResponse = "";
+```
+
+### changeGroupName
+- **Call**: `await api.group.changeGroupName(name: string, groupId: string)` (or `await api.changeGroupName(name: string, groupId: string)`)
+- **Endpoint**: POST /api/group/updateinfo
+- **Description**: Đổi tên hiển thị của nhóm chat hoặc Cộng đồng.
+```ts
+export type ChangeGroupNameResponse = {
+    status: number;
+};
+```
+
+### changeGroupOwner
+- **Call**: `await api.group.changeGroupOwner(memberId: string, groupId: string)` (or `await api.changeGroupOwner(memberId: string, groupId: string)`)
+- **Endpoint**: GET /api/group/change-owner
+- **Description**: Chuyển nhượng quyền Trưởng nhóm (Owner) cho một thành viên khác trong nhóm.
+```ts
+export type ChangeGroupOwnerResponse = {
+    time: number;
+};
+```
+
+### checkQuotaCommunityMember
+- **Call**: `await api.group.checkQuotaCommunityMember(groupId: string, uid: string)` (or `await api.checkQuotaCommunityMember(groupId: string, uid: string)`)
+- **Endpoint**: GET /api/group/quota/members-comm
+- **Description**: Kiểm tra điều kiện/hạn mức thành viên Cộng đồng đối với một thành viên cụ thể trong nhóm (command 12182)
+```ts
+export type CheckQuotaCommunityMemberResponse = {
+    status?: number;
+    canUpgrade?: boolean | number;
+    [key: string]: unknown;
+};
+```
+
+### createGroup
+- **Call**: `await api.group.createGroup(options: CreateGroupOptions)` (or `await api.createGroup(options: CreateGroupOptions)`)
+- **Endpoint**: POST /api/group/create/v2
+- **Description**: Tạo một nhóm chat mới kèm tên nhóm, danh sách thành viên ban đầu và ảnh đại diện.
+```ts
+export type CreateGroupResponse = {
+    groupType: number;
+    sucessMembers: string[];
+    groupId: string;
+    errorMembers: string[];
+    error_data: Record<string, unknown>;
+};
+
+export type CreateGroupOptions = {
+    /**
+     * Group name
+     */
+    name?: string;
+    /**
+     * List of member IDs to add to the group
+     */
+    members: string[];
+    /**
+     * Avatar source, can be a file path or an Attachment object
+     */
+    avatarSource?: AttachmentSource;
+    /**
+     * Path to the avatar image file
+     * @deprecated Use `avatarSource` instead
+     */
+    avatarPath?: string;
+};
+```
+
+### deleteGroupInviteBox
+- **Call**: `await api.group.deleteGroupInviteBox(groupId: string | string[], blockFutureInvite: boolean = false)` (or `await api.deleteGroupInviteBox(groupId: string | string[], blockFutureInvite: boolean = false)`)
+- **Endpoint**: GET /api/group/inv-box/mdel-inv
+- **Description**: Xóa lời mời tham gia nhóm trong hộp thư lời mời nhóm.
+```ts
+export type DeleteGroupInviteBoxResponse = {
+    delInvitaionIds: string[];
+    errMap: {
+        [groupId: string]: {
+            err: number;
+        };
+    };
+};
+```
+
+### disableGroupLink
+- **Call**: `await api.group.disableGroupLink(groupId: string)` (or `await api.disableGroupLink(groupId: string)`)
+- **Endpoint**: GET /api/group/link/disable
+- **Description**: Vô hiệu hóa (Tắt) đường dẫn tham gia nhóm bằng liên kết (Invite Link).
+```ts
+export type DisableGroupLinkResponse = "";
+```
+
+### disperseGroup
+- **Call**: `await api.group.disperseGroup(groupId: string)` (or `await api.disperseGroup(groupId: string)`)
+- **Endpoint**: POST /api/group/disperse
+- **Description**: Giải tán nhóm chat vĩnh viễn (yêu cầu quyền Trưởng nhóm).
+```ts
+export type DisperseGroupResponse = "";
+```
+
+### enableGroupLink
+- **Call**: `await api.group.enableGroupLink(groupId: string)` (or `await api.enableGroupLink(groupId: string)`)
+- **Endpoint**: GET /api/group/link/new
+- **Description**: Kích hoạt hoặc tạo mới đường dẫn liên kết mời tham gia nhóm.
+```ts
+export type EnableGroupLinkResponse = {
+    link: string;
+    expiration_date: number;
+    enabled: number;
+};
+```
+
+### getAllGroups
+- **Call**: `await api.group.getAllGroups()` (or `await api.getAllGroups()`)
+- **Endpoint**: GET /api/group/getlg/v4
+- **Description**: API getAllGroups thuộc phân hệ group.
+```ts
+export type GetAllGroupsResponse = {
+    version: string;
+    gridVerMap: {
+        [groupId: string]: string;
+    };
+};
+```
+
+### getE2eeGroupList
+- **Call**: `await api.group.getE2eeGroupList()` (or `await api.getE2eeGroupList()`)
+- **Endpoint**: GET /api/group/getlg/e2ee
+- **Description**: Lấy danh sách các nhóm đang bật mã hóa đầu cuối E2EE (command 12146)
+```ts
+export type GetE2eeGroupListResponse = {
+    version?: number;
+    gridVerMap?: Record<string, string>;
+    e2eeGroups?: string[];
+    [key: string]: unknown;
+};
+```
+
+### getExtraGroupInfo
+- **Call**: `await api.group.getExtraGroupInfo(groupIds: string[])` (or `await api.getExtraGroupInfo(groupIds: string[])`)
+- **Endpoint**: POST /api/group/userctx/multiget
+- **Description**: Lấy ngữ cảnh và vai trò mở rộng của người dùng đối với nhiều nhóm (command 12607)
+```ts
+export type ExtraContextInfo = {
+    purpose: string;
+    role: string[];
+    [key: string]: unknown;
+};
+
+export type GetExtraGroupInfoResponse = Record<string, ExtraContextInfo>;
+```
+
+### getGroupBlockedMember
+- **Call**: `await api.group.getGroupBlockedMember(payload: GetGroupBlockedMemberPayload, groupId: string)` (or `await api.getGroupBlockedMember(payload: GetGroupBlockedMemberPayload, groupId: string)`)
+- **Endpoint**: GET /api/group/blockedmems/list
+- **Description**: Lấy danh sách các tài khoản đang bị chặn khỏi nhóm.
+```ts
+export type GetGroupBlockedMemberPayload = {
+    /**
+     * Page number (default: 1)
+     */
+    page?: number;
+    /**
+     * Number of items to retrieve (default: 50)
+     */
+    count?: number;
+};
+
+export type GetGroupBlockedMemberResponse = {
+    blocked_members: {
+        id: string;
+        dName: string;
+        zaloName: string;
+        avatar: string;
+        avatar_25: string;
+        accountStatus: number;
+        type: number;
+    }[];
+    has_more: number;
+};
+```
+
+### getGroupChatHistory
+- **Call**: `await api.group.getGroupChatHistory(groupId: string, countOrOptions: number | GetGroupChatHistoryOptions = 50,)` (or `await api.getGroupChatHistory(groupId: string, countOrOptions: number | GetGroupChatHistoryOptions = 50,)`)
+- **Endpoint**: GET /api/cm/getoldv2, /api/cm/getrecentv2
+- **Description**: Lấy lịch sử tin nhắn nhóm từ Zalo Cloud Message (hỗ trợ cả /api/cm/getrecentv2 cmd 12506 và /api/cm/getoldv2 cmd 12507)
+```ts
+export type GetGroupChatHistoryOptions = {
+    /**
+     * Số lượng tin nhắn cần tải (mặc định: `50`).
+     */
+    count?: number;
+    /**
+     * Con trỏ `globalMsgId` (`lastMsgId` của trang trước) để phân trang lùi sâu về quá khứ (mặc định: `0`).
+     */
+    cursor?: number | string;
+    /**
+     * Số trang tối đa được phép gọi trong một lần thực thi.
+     */
+    maxPages?: number;
+    /**
+     * Sử dụng endpoint `/api/cm/getoldv2` (command 12507) thay vì `/api/cm/getrecentv2` (command 12506).
+     */
+    useOldEndpoint?: boolean;
+    /**
+     * Danh sách `msgIds` cục bộ bổ sung (mặc định: `[]`).
+     */
+    msgIds?: Array<string | number>;
+    /**
+     * Nguồn truy vấn (mặc định: `3`).
+     */
+    src?: number;
+    /**
+     * Cờ hội thoại OA (tùy chọn).
+     */
+    isOA?: boolean;
+};
+
+export type GetGroupChatHistoryResponse = {
+    error?: number;
+    lastMsgId?: number | string;
+    nextCursor?: number | string;
+    minMsgId?: number | string;
+    maxMsgId?: number | string;
+    msgJumpId?: number | string;
+    hasMore?: boolean;
+    isOld?: boolean;
+    isFiltered?: boolean;
+    rootMsgId?: number | string;
+    isRootDel?: boolean;
+    groupMsgs: GroupMessage[];
+    tsJoinGroup?: number;
+    isFilteredByPhase?: boolean;
+    isFilteredByTimeJoin?: boolean;
+};
+```
+
+### getGroupCloudMessageJump
+- **Call**: `await api.group.getGroupCloudMessageJump(groupId: string, globalMsgId: string | number, count: number = 20, msgJump: number = 1, msgIds: Array<string | number> = [],)` (or `await api.getGroupCloudMessageJump(groupId: string, globalMsgId: string | number, count: number = 20, msgJump: number = 1, msgIds: Array<string | number> = [],)`)
+- **Endpoint**: GET /api/cm/rgetv2
+- **Description**: Nhảy tới vị trí một tin nhắn nhóm cụ thể trên Zalo Cloud Message và lấy ngữ cảnh xung quanh (command 12508)
+```ts
+export type GetGroupCloudMessageJumpResponse = GetGroupChatHistoryResponse;
+```
+
+### getGroupCloudMessagePath
+- **Call**: `await api.group.getGroupCloudMessagePath(options: GetGroupCloudMessagePathOptions)` (or `await api.getGroupCloudMessagePath(options: GetGroupCloudMessagePathOptions)`)
+- **Endpoint**: GET /api/cm/getpath
+- **Description**: Lấy chuỗi tin nhắn nhóm theo đường dẫn nhảy tới một tin nhắn cụ thể (globalMsgId / rGlobalMsgId) qua /api/cm/getpath (command 12504)
+```ts
+export type GetGroupCloudMessagePathOptions = {
+    groupId: string;
+    globalMsgId: string | number;
+    count?: number;
+    reverse?: number | boolean;
+    rGlobalMsgId?: string | number;
+    rOwnerId?: string;
+    rClientMsgId?: string | number;
+};
+
+export type GetGroupCloudMessagePathResponse = {
+    lastMsgId?: string | number;
+    minMsgId?: string | number;
+    maxMsgId?: string | number;
+    hasMore?: boolean;
+    groupMsgs: GroupMessage[];
+    [key: string]: unknown;
+};
+```
+
+### getGroupHistoryLegacy
+- **Call**: `await api.group.getGroupHistoryLegacy(groupId: string, count: number = 20)` (or `await api.getGroupHistoryLegacy(groupId: string, count: number = 20)`)
+- **Endpoint**: GET /api/group/history
+- **Description**: Lấy lịch sử tin nhắn nhóm qua endpoint /api/group/history trên miền group (command 11240)
+```ts
+export type GetGroupHistoryLegacyResponse = {
+    groupMsgs?: GroupMessage[];
+    msgs?: GroupMessage[];
+    [key: string]: unknown;
+};
+```
+
+### getGroupInfo
+- **Call**: `await api.group.getGroupInfo(groupId: string | string[])` (or `await api.getGroupInfo(groupId: string | string[])`)
+- **Endpoint**: POST /api/group/getmg-v2
+- **Description**: Lấy thông tin chi tiết của một hoặc nhiều nhóm (tên nhóm, cài đặt lockViewMember, creatorId, adminIds, memVerList) qua /api/group/getmg-v2.
+```ts
+export type GroupInfoResponse = {
+    removedsGroup: string[];
+    unchangedsGroup: string[];
+    gridInfoMap: {
+        [groupId: string]: GroupInfo & {
+            memVerList: string[];
+            pendingApprove: GroupInfoPendingApprove;
+        };
+    };
+};
+
+export type GroupInfoPendingApprove = {
+    time: number;
+    uids: string[] | null;
+};
+```
+
+### getGroupInfoV2
+- **Call**: `await api.group.getGroupInfoV2(groupId: string, pageOrOptions: number | GetGroupInfoV2Options = 1)` (or `await api.getGroupInfoV2(groupId: string, pageOrOptions: number | GetGroupInfoV2Options = 1)`)
+- **Endpoint**: GET /api/group/getgi, /api/group/getgi/v2
+- **Description**: Lấy thông tin nhóm và danh sách thành viên theo trang qua /api/group/getgi/v2 hoặc /api/group/getgi (command 11162)
+```ts
+export type GetGroupInfoV2Options = {
+    /**
+     * Trang thành viên cần lấy (mặc định: `1`).
+     */
+    mpage?: number;
+    /**
+     * Số lượng thành viên mỗi trang (mặc định: `100`).
+     */
+    mcount?: number;
+    /**
+     * Kích thước ảnh đại diện nhóm (mặc định: `120`).
+     */
+    avatarSize?: number;
+    /**
+     * Kích thước ảnh đại diện thành viên (mặc định: `120`).
+     */
+    memberAvatarSize?: number;
+    /**
+     * Sử dụng endpoint `/api/group/getgi` (bản V1) thay vì `/api/group/getgi/v2` (mặc định: `false`).
+     */
+    useV1Endpoint?: boolean;
+};
+
+export type GetGroupInfoV2Response = GroupInfo & {
+    admins?: GroupCurrentMem[];
+    pendingApprove?: GroupInfoPendingApprove;
+    [key: string]: unknown;
+};
+```
+
+### getGroupInviteBoxInfo
+- **Call**: `await api.group.getGroupInviteBoxInfo(payload: GetGroupInviteBoxInfoPayload)` (or `await api.getGroupInviteBoxInfo(payload: GetGroupInviteBoxInfoPayload)`)
+- **Endpoint**: GET /api/group/inv-box/inv-info
+- **Description**: Lấy thông tin chi tiết của một lời mời vào nhóm cụ thể.
+```ts
+export type GetGroupInviteBoxInfoPayload = {
+    groupId: string;
+    mpage?: number;
+    mcount?: number;
+};
+
+export type GetGroupInviteBoxInfoResponse = {
+    groupInfo: GroupInfo & {
+        topic?: Omit<GroupTopic, "action">;
+    };
+    inviterInfo: {
+        id: string;
+        dName: string;
+        zaloName: string;
+        avatar: string;
+        avatar_25: string;
+        accountStatus: number;
+        type: number;
+    };
+    grCreatorInfo: {
+        id: string;
+        dName: string;
+        zaloName: string;
+        avatar: string;
+        avatar_25: string;
+        accountStatus: number;
+        type: number;
+    };
+    expiredTs: string;
+    type: number;
+};
+```
+
+### getGroupInviteBoxList
+- **Call**: `await api.group.getGroupInviteBoxList(payload?: GetGroupInviteBoxListPayload)` (or `await api.getGroupInviteBoxList(payload?: GetGroupInviteBoxListPayload)`)
+- **Endpoint**: GET /api/group/inv-box/list
+- **Description**: Lấy danh sách tất cả lời mời tham gia nhóm đang chờ trong hộp thư.
+```ts
+export type GetGroupInviteBoxListPayload = {
+    mpage?: number;
+    page?: number;
+    invPerPage?: number;
+    mcount?: number;
+};
+
+export type GetGroupInviteBoxListResponse = {
+    invitations: {
+        groupInfo: GroupInfo;
+        inviterInfo: {
+            id: string;
+            dName: string;
+            zaloName: string;
+            avatar: string;
+            avatar_25: string;
+            accountStatus: number;
+            type: number;
+        };
+        grCreatorInfo: {
+            id: string;
+            dName: string;
+            zaloName: string;
+            avatar: string;
+            avatar_25: string;
+            accountStatus: number;
+            type: number;
+        };
+        /**
+         * Expired timestamp max 7 days
+         */
+        expiredTs: string;
+        type: number;
+    }[];
+    total: number;
+    hasMore: boolean;
+};
+```
+
+### getGroupLinkDetail
+- **Call**: `await api.group.getGroupLinkDetail(groupId: string)` (or `await api.getGroupLinkDetail(groupId: string)`)
+- **Endpoint**: GET /api/group/link/detail
+- **Description**: Lấy chi tiết đường dẫn mời tham gia nhóm (Link邀請) của một nhóm mà bạn đang tham gia.
+```ts
+export type GetGroupLinkDetailResponse = {
+    link?: string;
+    expiration_date?: number;
+    /**
+     * 1: enabled, 0: disabled
+     */
+    enabled: number;
+};
+```
+
+### getGroupLinkInfo
+- **Call**: `await api.group.getGroupLinkInfo(payload: GetGroupLinkInfoPayload)` (or `await api.getGroupLinkInfo(payload: GetGroupLinkInfoPayload)`)
+- **Endpoint**: GET /api/group/link/ginfo
+- **Description**: Tra cứu thông tin nhóm và danh sách thành viên theo trang từ đường dẫn nhóm công khai (https://zalo.me/g/...).
+```ts
+export type GetGroupLinkInfoPayload = {
+    link: string;
+    /**
+     * Default: 1
+     */
+    memberPage?: number;
+};
+
+export type GetGroupLinkInfoResponse = {
+    groupId: string;
+    name: string;
+    desc: string;
+    type: GroupType;
+    creatorId: string;
+    avt: string;
+    fullAvt: string;
+    adminIds: string[];
+    currentMems: {
+        id: string;
+        dName: string;
+        zaloName: string;
+        avatar: string;
+        avatar_25: string;
+        accountStatus: number;
+        type: number;
+    }[];
+    admins: unknown[];
+    hasMoreMember: number;
+    subType: number;
+    totalMember: number;
+    setting: GroupSetting;
+    globalId: string;
+};
+```
+
+### getGroupListV3
+- **Call**: `await api.group.getGroupListV3(pageOrOptions: number | GetGroupListV3Options = 1)` (or `await api.getGroupListV3(pageOrOptions: number | GetGroupListV3Options = 1)`)
+- **Endpoint**: GET /api/group/getlg/v3
+- **Description**: Lấy danh sách nhóm theo trang kèm thông tin thành viên đại diện (currentMems) và gợi ý nhóm (suggestGroup) qua /api/group/getlg/v3 (command 11161)
+```ts
+export type GetGroupListV3Options = {
+    /**
+     * Số trang cần lấy (mặc định: `1`).
+     */
+    page?: number;
+    /**
+     * Số lượng nhóm mỗi trang (mặc định: `100`).
+     */
+    count?: number;
+};
+
+export type GetGroupListV3Response = {
+    groups: GroupInfo[];
+    hasMore?: number | boolean;
+    total?: number;
+    suggestGroup?: unknown;
+    [key: string]: unknown;
+};
+```
+
+### getGroupMembersInfo
+- **Call**: `await api.group.getGroupMembersInfo(memberId: string | string[])` (or `await api.getGroupMembersInfo(memberId: string | string[])`)
+- **Endpoint**: GET /api/social/group/members
+- **Description**: Giải mã hàng loạt thông tin hồ sơ thành viên (displayName, zaloName, avatar, globalId) từ danh sách UID qua /api/social/group/members.
+```ts
+export type GroupMemberProfile = {
+    displayName: string;
+    zaloName: string;
+    avatar: string;
+    accountStatus: number;
+    type: number;
+    lastUpdateTime: number;
+    globalId: string;
+    id: string;
+};
+
+export type GetGroupMembersInfoResponse = {
+    profiles: {
+        [memberId: string]: GroupMemberProfile;
+    };
+    unchangeds_profile: unknown[];
+};
+```
+
+### getGroupMessageStatus
+- **Call**: `await api.group.getGroupMessageStatus(groupIdOrItems: string | GetGroupMessageStatusQueryItem[], memberIds: string[] = [],)` (or `await api.getGroupMessageStatus(groupIdOrItems: string | GetGroupMessageStatusQueryItem[], memberIds: string[] = [],)`)
+- **Endpoint**: POST /api/group/getStatusMsg
+- **Description**: Truy vấn trạng thái Đã nhận (deliver) và Đã xem (seen) tin nhắn của danh sách thành viên trong nhóm (command 12017)
+```ts
+export type GroupMessageStatusMemberItem = {
+    id: string;
+    seen?: string | number;
+    deliver?: string | number;
+    [key: string]: unknown;
+};
+
+export type GroupMessageStatusThreadInfo = {
+    tId?: string;
+    ids: GroupMessageStatusMemberItem[];
+    [key: string]: unknown;
+};
+
+export type GetGroupMessageStatusQueryItem = {
+    /**
+     * ID nhóm (không có tiền tố `g`).
+     */
+    tId: string;
+    /**
+     * Danh sách UID thành viên cần truy vấn trạng thái `seen` / `deliver` trong nhóm.
+     */
+    ids: string[];
+};
+
+export type GetGroupMessageStatusResponse = {
+    statusInfos: GroupMessageStatusThreadInfo[];
+    [key: string]: unknown;
+};
+```
+
+### getMultiGroupCloudMessages
+- **Call**: `await api.group.getMultiGroupCloudMessages(groupIds: string[], nretry: number = 0)` (or `await api.getMultiGroupCloudMessages(groupIds: string[], nretry: number = 0)`)
+- **Endpoint**: GET /api/cm/mget
+- **Description**: Đồng bộ nhanh tin nhắn Cloud của nhiều nhóm cùng lúc theo danh sách groupIds (command 12503 - syncCloudMsgFirstLogin)
+```ts
+export type GetMultiGroupCloudMessagesResponse = {
+    groupMsgs?: Record<string, unknown[]>;
+    [key: string]: unknown;
+};
+```
+
+### getPendingGroupMembers
+- **Call**: `await api.group.getPendingGroupMembers(groupId: string)` (or `await api.getPendingGroupMembers(groupId: string)`)
+- **Endpoint**: GET /api/group/pending-mems/list
+- **Description**: Lấy danh sách các yêu cầu xin vào nhóm đang chờ Quản trị viên phê duyệt.
+```ts
+export type GetPendingGroupMembersUserInfo = {
+    uid: string;
+    dpn: string;
+    avatar: string;
+    user_submit: null;
+};
+
+export type GetPendingGroupMembersResponse = {
+    time: number;
+    users: GetPendingGroupMembersUserInfo[];
+};
+```
+
+### getQuotaCommunity
+- **Call**: `await api.group.getQuotaCommunity(groupId: string | null = null, language: string = "vi")` (or `await api.getQuotaCommunity(groupId: string | null = null, language: string = "vi")`)
+- **Endpoint**: GET /api/group/quota/community
+- **Description**: Kiểm tra hạn mức nâng cấp nhóm lên Cộng đồng của tài khoản (command 12181)
+```ts
+export type GetQuotaCommunityResponse = {
+    canUpgr: boolean;
+    curComm: number;
+    quotaComm: number;
+    error_message_localize?: string;
+    [key: string]: unknown;
+};
+```
+
+### getRelatedFriendGroup
+- **Call**: `await api.group.getRelatedFriendGroup(friendId: string | string[])` (or `await api.getRelatedFriendGroup(friendId: string | string[])`)
+- **Endpoint**: POST /api/friend/group/related
+- **Description**: Kiểm tra danh sách các nhóm chung giữa tài khoản hiện tại và danh sách UID truyền vào qua /api/friend/group/related.
+```ts
+export type GetRelatedFriendGroupResponse = {
+    groupRelateds: {
+        [friendId: string]: string[];
+    };
+};
+```
+
+### inviteUserToGroups
+- **Call**: `await api.group.inviteUserToGroups(userId: string, groupId: string | string[])` (or `await api.inviteUserToGroups(userId: string, groupId: string | string[])`)
+- **Endpoint**: GET /api/group/invite/multi
+- **Description**: Gửi lời mời tham gia một hoặc nhiều nhóm tới người dùng.
+```ts
+export type InviteUserToGroupsResponse = {
+    grid_message_map: {
+        [groupId: string]: {
+            error_code: number;
+            error_message: string;
+            data: string | null;
+        };
+    };
+};
+```
+
+### joinGroupInviteBox
+- **Call**: `await api.group.joinGroupInviteBox(groupId: string)` (or `await api.joinGroupInviteBox(groupId: string)`)
+- **Endpoint**: GET /api/group/inv-box/join
+- **Description**: Chấp nhận lời mời tham gia nhóm từ hộp thư lời mời.
+```ts
+export type JoinGroupInviteBoxResponse = "";
+```
+
+### joinGroupLink
+- **Call**: `await api.group.joinGroupLink(link: string)` (or `await api.joinGroupLink(link: string)`)
+- **Endpoint**: GET /api/group/link/join
+- **Description**: Tham gia vào nhóm thông qua đường dẫn liên kết mời (Group Link).
+```ts
+export type JoinGroupLinkResponse = "";
+```
+
+### leaveGroup
+- **Call**: `await api.group.leaveGroup(groupId: string, silent: boolean = false)` (or `await api.leaveGroup(groupId: string, silent: boolean = false)`)
+- **Endpoint**: POST /api/group/leave
+- **Description**: Rời khỏi một hoặc nhiều nhóm chat (hỗ trợ rời nhóm im lặng silent).
+```ts
+export type LeaveGroupResponse = {
+    memberError: unknown[];
+};
+```
+
+### removeGroupBlockedMember
+- **Call**: `await api.group.removeGroupBlockedMember(memberId: string | string[], groupId: string)` (or `await api.removeGroupBlockedMember(memberId: string | string[], groupId: string)`)
+- **Endpoint**: GET /api/group/blockedmems/remove
+- **Description**: Gỡ chặn (Unblock) cho người dùng khỏi danh sách chặn của nhóm.
+```ts
+export type RemoveGroupBlockedMemberResponse = "";
+```
+
+### removeGroupDeputy
+- **Call**: `await api.group.removeGroupDeputy(memberId: string | string[], groupId: string)` (or `await api.removeGroupDeputy(memberId: string | string[], groupId: string)`)
+- **Endpoint**: GET /api/group/admins/remove
+- **Description**: Cách chức Phó nhóm (thu hồi quyền Quản trị viên) của thành viên.
+```ts
+export type RemoveGroupDeputyResponse = "";
+```
+
+### removeGroupTopic
+- **Call**: `await api.group.removeGroupTopic(groupId: string)` (or `await api.removeGroupTopic(groupId: string)`)
+- **Endpoint**: POST /api/group/topic/remove
+- **Description**: Xóa chủ đề đang ghim trên đầu nhóm (command 11829)
+```ts
+export type RemoveGroupTopicResponse = Record<string, unknown>;
+```
+
+### removeUserFromGroup
+- **Call**: `await api.group.removeUserFromGroup(memberId: string | string[], groupId: string)` (or `await api.removeUserFromGroup(memberId: string | string[], groupId: string)`)
+- **Endpoint**: POST /api/group/kickout
+- **Description**: Mời ra khỏi nhóm (Kick) một hoặc nhiều thành viên.
+```ts
+export type RemoveUserFromGroupResponse = {
+    errorMembers: string[];
+};
+```
+
+### removeUserFromGroups
+- **Call**: `await api.group.removeUserFromGroups(groupIds: string | string[], memberId: string, srcInteraction: number = 2,)` (or `await api.removeUserFromGroups(groupIds: string | string[], memberId: string, srcInteraction: number = 2,)`)
+- **Endpoint**: GET /api/group/kickout/multi
+- **Description**: Xóa một thành viên khỏi nhiều nhóm cùng lúc (command 12606)
+```ts
+export type RemoveUserFromGroupsResponse = Record<string, unknown>;
+```
+
+### reviewPendingMemberRequest
+- **Call**: `await api.group.reviewPendingMemberRequest(payload: ReviewPendingMemberRequestPayload, groupId: string)` (or `await api.reviewPendingMemberRequest(payload: ReviewPendingMemberRequestPayload, groupId: string)`)
+- **Endpoint**: GET /api/group/pending-mems/review
+- **Description**: Phê duyệt (Chấp nhận hoặc Từ chối) yêu cầu xin tham gia nhóm của thành viên mới.
+```ts
+export type ReviewPendingMemberRequestPayload = {
+    members: string | string[];
+    isApprove: boolean;
+};
+
+export enum ReviewPendingMemberRequestStatus {
+    SUCCESS = 0,
+    NOT_IN_PENDING_LIST = 170,
+    ALREADY_IN_GROUP = 178,
+    INSUFFICIENT_PERMISSION = 166,
+}
+
+export type ReviewPendingMemberRequestResponse = {
+    [memberId: string]: ReviewPendingMemberRequestStatus;
+};
+```
+
+### updateGroupSettings
+- **Call**: `await api.group.updateGroupSettings(options: UpdateGroupSettingsOptions, groupId: string)` (or `await api.updateGroupSettings(options: UpdateGroupSettingsOptions, groupId: string)`)
+- **Endpoint**: GET /api/group/setting/update
+- **Description**: Cập nhật các thiết lập quyền hạn của nhóm (ẩn thành viên lockViewMember, duyệt thành viên joinAppr, khóa nhắn tin lockSendMsg...).
+```ts
+export type UpdateGroupSettingsOptions = {
+    /**
+     * Disallow group members to change the group name and avatar
+     */
+    blockName?: boolean;
+    /**
+     * Highlight messages from owner/admins
+     */
+    signAdminMsg?: boolean;
+    /**
+     * Don't pin messages, notes, and polls to the top of a conversation
+     */
+    setTopicOnly?: boolean;
+    /**
+     * Allow new members to read most recent messages
+     */
+    enableMsgHistory?: boolean;
+    /**
+     * Membership approval
+     */
+    joinAppr?: boolean;
+    /**
+     * Disallow group members to create notes & reminders
+     */
+    lockCreatePost?: boolean;
+    /**
+     * Disallow group members to create polls
+     */
+    lockCreatePoll?: boolean;
+    /**
+     * Disallow group members to send messages
+     */
+    lockSendMsg?: boolean;
+    /**
+     * Disallow group members to view full member list (community only)
+     */
+    lockViewMember?: boolean;
+
+    // bannFeature?: boolean; // not see in UI, not implemented
+    // addMemberOnly?: boolean; // not see in UI, not implemented
+    // dirtyMedia?: boolean; // not see in UI, not implemented
+    // banDuration?: boolean | number; // not see in UI, not implemented
+};
+
+export type UpdateGroupSettingsResponse = "";
+```
+
+### upgradeGroupToCommunity
+- **Call**: `await api.group.upgradeGroupToCommunity(groupId: string)` (or `await api.upgradeGroupToCommunity(groupId: string)`)
+- **Endpoint**: GET /api/group/upgrade/community
+- **Description**: Nâng cấp nhóm thường lên Cộng đồng (Community - tối đa 1000 thành viên).
+```ts
+export type UpgradeGroupToCommunityResponse = "";
+```
+
+## Domain: Bạn bè & Danh bạ (Friend) (`api.friend` — 37 APIs)
+Quản lý danh sách bạn bè, lời mời kết bạn, gợi ý kết bạn, biệt danh (alias), chặn, đồng bộ danh bạ và kiểm tra trạng thái hoạt động PC/Web.
+
+### acceptFriendRequest
+- **Call**: `await api.friend.acceptFriendRequest(friendId: string)` (or `await api.acceptFriendRequest(friendId: string)`)
+- **Endpoint**: POST /api/friend/accept
+- **Description**: Đồng ý lời mời kết bạn từ một người dùng.
+```ts
+export type AcceptFriendRequestResponse = "";
+```
+
+### blockUser
+- **Call**: `await api.friend.blockUser(userId: string)` (or `await api.blockUser(userId: string)`)
+- **Endpoint**: POST /api/friend/block
+- **Description**: Chặn tin nhắn từ một người dùng theo UID.
+```ts
+export type BlockUserResponse = "";
+```
+
+### blockViewFeed
+- **Call**: `await api.friend.blockViewFeed(isBlockFeed: boolean, userId: string)` (or `await api.blockViewFeed(isBlockFeed: boolean, userId: string)`)
+- **Endpoint**: POST /api/friend/feed/block
+- **Description**: Chặn hoặc mở chặn quyền xem Nhật ký (Timeline Feed) đối với một người bạn.
+```ts
+export type BlockViewFeedResponse = "";
+```
+
+### changeFriendAlias
+- **Call**: `await api.friend.changeFriendAlias(alias: string, friendId: string)` (or `await api.changeFriendAlias(alias: string, friendId: string)`)
+- **Endpoint**: GET /api/alias/update
+- **Description**: Đặt hoặc đổi tên gợi nhớ (Biệt danh / Alias) cho bạn bè.
+```ts
+export type ChangeFriendAliasResponse = "";
+```
+
+### clearUnreadFriendRequests
+- **Call**: `await api.friend.clearUnreadFriendRequests(uidsSeen: string[] = [])` (or `await api.clearUnreadFriendRequests(uidsSeen: string[] = [])`)
+- **Endpoint**: POST /api/friend/recommendsv2/read-requests
+- **Description**: Đánh dấu đã xem danh sách lời mời kết bạn chưa đọc (command 12232)
+```ts
+export type ClearUnreadFriendRequestsResponse = Record<string, unknown> | string;
+```
+
+### findUser
+- **Call**: `await api.friend.findUser(phoneNumber: string, avatarSize: AvatarSize = AvatarSize.Large)` (or `await api.findUser(phoneNumber: string, avatarSize: AvatarSize = AvatarSize.Large)`)
+- **Endpoint**: GET /api/friend/profile/get
+- **Description**: Tìm kiếm thông tin tài khoản Zalo thông qua số điện thoại.
+```ts
+export type FindUserResponse = UserBasic;
+```
+
+### findUserByUsername
+- **Call**: `await api.friend.findUserByUsername(username: string, avatarSize: AvatarSize = AvatarSize.Large)` (or `await api.findUserByUsername(username: string, avatarSize: AvatarSize = AvatarSize.Large)`)
+- **Endpoint**: GET /api/friend/search/by-user-name
+- **Description**: Tìm kiếm thông tin tài khoản Zalo thông qua Username.
+```ts
+export type FindUserByUsernameResponse = UserBasic;
+```
+
+### getAliasList
+- **Call**: `await api.friend.getAliasList(count: number = 100, page: number = 1)` (or `await api.getAliasList(count: number = 100, page: number = 1)`)
+- **Endpoint**: GET /api/alias/list
+- **Description**: Lấy danh sách toàn bộ tên gợi nhớ (Alias) đã đặt cho bạn bè.
+```ts
+export type GetAliasListResponse = {
+    items: {
+        userId: string;
+        alias: string;
+    }[];
+    updateTime: string;
+};
+```
+
+### getAliasListV2
+- **Call**: `await api.friend.getAliasListV2(page: number = 1, count: number = 100)` (or `await api.getAliasListV2(page: number = 1, count: number = 100)`)
+- **Endpoint**: GET /api/alias/list/v2
+- **Description**: Lấy danh sách tên gợi nhớ (Alias) của bạn bè chuẩn V2 có hỗ trợ phân trang (command 12205)
+```ts
+export type AliasItemV2 = {
+    userId: string;
+    alias: string;
+};
+
+export type GetAliasListV2Response = {
+    items: AliasItemV2[];
+    updateTime?: string;
+    [key: string]: unknown;
+};
+```
+
+### getAllFriends
+- **Call**: `await api.friend.getAllFriends(count: number = 20000, page: number = 1, avatarSize: AvatarSize = AvatarSize.Small,)` (or `await api.getAllFriends(count: number = 20000, page: number = 1, avatarSize: AvatarSize = AvatarSize.Small,)`)
+- **Endpoint**: GET /api/social/friend/getfriends
+- **Description**: Lấy toàn bộ danh sách bạn bè trong danh bạ tài khoản hiện tại.
+```ts
+export type GetAllFriendsResponse = User[];
+```
+
+### getBlockFriends
+- **Call**: `await api.friend.getBlockFriends(page: number = 1, count: number = 50, avatarSize: number = 120)` (or `await api.getBlockFriends(page: number = 1, count: number = 50, avatarSize: number = 120)`)
+- **Endpoint**: GET /api/friend/blocklistv2
+- **Description**: Lấy danh sách người dùng đang bị chặn chuẩn V2 (command 11429)
+```ts
+export type GetBlockFriendsResponse = {
+    profiles: Record<string, unknown>[];
+    version: number;
+    hasMore: number;
+};
+```
+
+### getCloseFriends
+- **Call**: `await api.friend.getCloseFriends()` (or `await api.getCloseFriends()`)
+- **Endpoint**: GET /api/social/friend/getclosedfriends
+- **Description**: Lấy danh sách bạn thân (Close Friends).
+```ts
+export type GetCloseFriendsResponse = User[];
+```
+
+### getExtraFriendInfo
+- **Call**: `await api.friend.getExtraFriendInfo(friendIds: string[])` (or `await api.getExtraFriendInfo(friendIds: string[])`)
+- **Endpoint**: POST /api/friend/context/multiget
+- **Description**: Lấy ngữ cảnh và vai trò mở rộng (ví dụ role: ["boss"]) của danh sách bạn bè (command 11442)
+```ts
+export type GetExtraFriendInfoResponse = Record<string, ExtraContextInfo>;
+```
+
+### getFriendBoardList
+- **Call**: `await api.friend.getFriendBoardList(conversationId: string)` (or `await api.getFriendBoardList(conversationId: string)`)
+- **Endpoint**: GET /api/friendboard/list
+- **Description**: Lấy thông tin bảng tin chung với một người bạn.
+```ts
+export type GetFriendBoardListResponse = {
+    data: string[];
+    version: number;
+};
+```
+
+### getFriendOnlines
+- **Call**: `await api.friend.getFriendOnlines()` (or `await api.getFriendOnlines()`)
+- **Endpoint**: GET /api/social/friend/onlines
+- **Description**: Lấy danh sách bạn bè đang trực tuyến (Online) kèm trạng thái thiết bị.
+```ts
+export type GetFriendOnlinesStatus = {
+    userId: string;
+    status: string;
+};
+
+export type GetFriendOnlinesResponse = {
+    predefine: string[];
+    ownerStatus: string;
+    onlines: GetFriendOnlinesStatus[];
+};
+```
+
+### getFriendProfilesV2
+- **Call**: `await api.friend.getFriendProfilesV2(friendIds: string | string[], options: GetFriendProfilesV2Options = {})` (or `await api.getFriendProfilesV2(friendIds: string | string[], options: GetFriendProfilesV2Options = {})`)
+- **Endpoint**: POST /api/social/friend/getprofiles/v2
+- **Description**: Lấy hàng loạt hồ sơ chi tiết của danh sách bạn bè kèm trạng thái online qua /api/social/friend/getprofiles/v2 (command 11140)
+```ts
+export type GetFriendProfilesV2Options = {
+    /**
+     * Phiên bản danh bạ (mặc định: `0`).
+     */
+    phonebookVersion?: number;
+    /**
+     * Kích thước ảnh đại diện (mặc định: `120`).
+     */
+    avatarSize?: number;
+    /**
+     * Ngôn ngữ (mặc định: `"vi"`).
+     */
+    language?: string;
+    /**
+     * Trả kèm trạng thái online của bạn bè (mặc định: `true`).
+     */
+    showOnlineStatus?: boolean;
+};
+
+export type GetFriendProfilesV2Response = {
+    profiles: Record<string, GroupMemberProfile>;
+    unchangeds_profile?: string[];
+    phonebook_version?: number;
+    [key: string]: unknown;
+};
+```
+
+### getFriendRecommendations
+- **Call**: `await api.friend.getFriendRecommendations()` (or `await api.getFriendRecommendations()`)
+- **Endpoint**: GET /api/friend/recommendsv2/list
+- **Description**: Lấy danh sách gợi ý kết bạn và lời mời kết bạn đã nhận.
+```ts
+export enum FriendRecommendationsType {
+    RecommendedFriend = 1,
+    ReceivedFriendRequest = 2,
+}
+
+export type FriendRecommendationsCollapseMsgListConfig = {
+    collapseId: number;
+    collapseXItem: number;
+    collapseYItem: number;
+};
+
+export type FriendRecommendationsDataInfo = {
+    userId: string;
+    zaloName: string;
+    displayName: string;
+    avatar: string;
+    phoneNumber: string;
+    status: string;
+    gender: Gender;
+    dob: number;
+    type: number;
+    recommType: FriendRecommendationsType;
+    recommSrc: number;
+    recommTime: number;
+    recommInfo: {
+        suggestWay: number;
+        source: number;
+        message: string;
+        customText: string | null;
+    };
+    bizPkg: ZBusinessPackage;
+    isSeenFriendReq: boolean;
+};
+
+export type FriendRecommendationsRecommItem = {
+    recommItemType: number;
+    dataInfo: FriendRecommendationsDataInfo;
+};
+
+export type GetFriendRecommendationsResponse = {
+    expiredDuration: number;
+    collapseMsgListConfig: FriendRecommendationsCollapseMsgListConfig;
+    recommItems: FriendRecommendationsRecommItem[];
+};
+```
+
+### getFriendRequestStatus
+- **Call**: `await api.friend.getFriendRequestStatus(friendId: string)` (or `await api.getFriendRequestStatus(friendId: string)`)
+- **Endpoint**: GET /api/friend/reqstatus
+- **Description**: Kiểm tra trạng thái quan hệ bạn bè và lời mời kết bạn với một UID.
+```ts
+export type GetFriendRequestStatusResponse = {
+    addFriendPrivacy: number;
+    isSeenFriendReq: boolean;
+    is_friend: number;
+    is_requested: number;
+    is_requesting: number;
+};
+```
+
+### getFriendsActivePCWeb
+- **Call**: `await api.friend.getFriendsActivePCWeb()` (or `await api.getFriendsActivePCWeb()`)
+- **Endpoint**: GET /api/social/friend/active-pcweb
+- **Description**: Lấy danh sách bạn bè đang hoạt động trên Zalo PC / Web qua /api/social/friend/active-pcweb (command 12072)
+```ts
+export type GetFriendsActivePCWebResponse = {
+    uids?: string[];
+    activeUsers?: unknown[];
+    [key: string]: unknown;
+};
+```
+
+### getFriendsEmojiStatus
+- **Call**: `await api.friend.getFriendsEmojiStatus(options: GetFriendsEmojiStatusOptions = {})` (or `await api.getFriendsEmojiStatus(options: GetFriendsEmojiStatusOptions = {})`)
+- **Endpoint**: GET /api/v1/emoji-status/friends
+- **Description**: Lấy danh sách trạng thái Emoji (Emoji Status) hiện tại của bạn bè (command 16301)
+```ts
+export type GetFriendsEmojiStatusOptions = {
+    version?: number;
+    fromUid?: string;
+    maxEmojiStatusId?: string | number;
+    page?: number;
+};
+
+export type GetFriendsEmojiStatusResponse = {
+    expireTime: number;
+    emojiStatuses: Record<string, unknown>[];
+    version: number;
+    type: number;
+    maxEmojiStatusId: number;
+    loadMore: boolean;
+    lastUid: string;
+    page: number;
+};
+```
+
+### getLastReadContactTab
+- **Call**: `await api.friend.getLastReadContactTab()` (or `await api.getLastReadContactTab()`)
+- **Endpoint**: GET /api/friend/last-read-contact-tab
+- **Description**: Lấy dấu thời gian lần cuối đọc tab Danh bạ (command 12230)
+```ts
+export type GetLastReadContactTabResponse = {
+    ts: number;
+};
+```
+
+### getMultiUserQRCodes
+- **Call**: `await api.friend.getMultiUserQRCodes(fids: string | string[])` (or `await api.getMultiUserQRCodes(fids: string | string[])`)
+- **Endpoint**: POST /api/friend/mget-qr
+- **Description**: Lấy mã QR cá nhân của một hoặc nhiều người dùng (command 12128)
+```ts
+export type GetMultiUserQRCodesResponse = Record<string, unknown>;
+```
+
+### getMultiUsersByPhones
+- **Call**: `await api.friend.getMultiUsersByPhones(phoneNumbers: string | string[], avatarSize: AvatarSize = AvatarSize.Large,)` (or `await api.getMultiUsersByPhones(phoneNumbers: string | string[], avatarSize: AvatarSize = AvatarSize.Large,)`)
+- **Endpoint**: GET /api/friend/profile/multiget
+- **Description**: Tra cứu hàng loạt thông tin tài khoản Zalo từ danh sách nhiều số điện thoại cùng lúc.
+```ts
+export type GetMultiUsersByPhonesResponse = {
+    [phoneNumber: string]: UserBasic;
+};
+```
+
+### getPhonebookV2
+- **Call**: `await api.friend.getPhonebookV2(phonebookVersion: number = 0)` (or `await api.getPhonebookV2(phonebookVersion: number = 0)`)
+- **Endpoint**: GET /api/social/friend/phonebook/v2
+- **Description**: Lấy danh bạ bạn bè đồng bộ từ số điện thoại chuẩn V2 (command 12428)
+```ts
+export type GetPhonebookV2Response = {
+    phonebook: Record<string, string>;
+    version?: number;
+    [key: string]: unknown;
+};
+```
+
+### getSentFriendRequest
+- **Call**: `await api.friend.getSentFriendRequest()` (or `await api.getSentFriendRequest()`)
+- **Endpoint**: GET /api/friend/requested/list
+- **Description**: Lấy danh sách các lời mời kết bạn mà tài khoản hiện tại đã gửi đi nhưng chưa được phản hồi.
+```ts
+export type SentFriendRequestInfo = {
+    userId: string;
+    zaloName: string;
+    displayName: string;
+    avatar: string;
+    globalId: string;
+    bizPkg: ZBusinessPackage;
+    fReqInfo: {
+        message: string;
+        src: number;
+        time: number;
+    };
+};
+
+export type GetSentFriendRequestResponse = {
+    [userId: string]: SentFriendRequestInfo;
+};
+```
+
+### lastOnline
+- **Call**: `await api.friend.lastOnline(uid: string)` (or `await api.lastOnline(uid: string)`)
+- **Endpoint**: GET /api/social/profile/lastOnline
+- **Description**: Kiểm tra thời điểm truy cập (Online) gần nhất của một người dùng.
+```ts
+export type LastOnlineResponse = {
+    settings: {
+        show_online_status: boolean;
+    };
+    lastOnline: number;
+};
+```
+
+### readContactTab
+- **Call**: `await api.friend.readContactTab(ts: number = Date.now())` (or `await api.readContactTab(ts: number = Date.now())`)
+- **Endpoint**: POST /api/friend/read-contact-tab
+- **Description**: Đánh dấu đã đọc tab Danh bạ (command 12231)
+```ts
+export type ReadContactTabResponse = Record<string, unknown> | string;
+```
+
+### rejectFriendRequest
+- **Call**: `await api.friend.rejectFriendRequest(friendId: string)` (or `await api.rejectFriendRequest(friendId: string)`)
+- **Endpoint**: POST /api/friend/reject
+- **Description**: Từ chối lời mời kết bạn từ một người dùng.
+```ts
+export type RejectFriendRequestResponse = "";
+```
+
+### removeFriend
+- **Call**: `await api.friend.removeFriend(friendId: string)` (or `await api.removeFriend(friendId: string)`)
+- **Endpoint**: POST /api/friend/remove
+- **Description**: Hủy kết bạn (Xóa bạn) với một người dùng trong danh bạ.
+```ts
+export type RemoveFriendResponse = "";
+```
+
+### removeFriendAlias
+- **Call**: `await api.friend.removeFriendAlias(friendId: string)` (or `await api.removeFriendAlias(friendId: string)`)
+- **Endpoint**: GET /api/alias/remove
+- **Description**: Xóa tên gợi nhớ (Biệt danh / Alias) đã đặt cho một người bạn.
+```ts
+export type RemoveFriendAliasResponse = "";
+```
+
+### removeFriendRecommendation
+- **Call**: `await api.friend.removeFriendRecommendation(uid: string, src: number = 0)` (or `await api.removeFriendRecommendation(uid: string, src: number = 0)`)
+- **Endpoint**: POST /api/friend/recommends/remove
+- **Description**: Xóa một gợi ý kết bạn khỏi danh sách đề xuất (command 11432)
+```ts
+export type RemoveFriendRecommendationResponse = Record<string, unknown>;
+```
+
+### removeFriendRecommendationV2
+- **Call**: `await api.friend.removeFriendRecommendationV2(uid: string, src: number = 0, type: number = 0)` (or `await api.removeFriendRecommendationV2(uid: string, src: number = 0, type: number = 0)`)
+- **Endpoint**: POST /api/friend/recommendsv2/remove
+- **Description**: Xóa một gợi ý kết bạn khỏi danh sách đề xuất V2 (command 11438)
+```ts
+export type RemoveFriendRecommendationV2Response = Record<string, unknown>;
+```
+
+### sendFriendRequest
+- **Call**: `await api.friend.sendFriendRequest(msg: string, userId: string)` (or `await api.sendFriendRequest(msg: string, userId: string)`)
+- **Endpoint**: POST /api/friend/sendreq
+- **Description**: Gửi lời mời kết bạn kèm lời chào tới một người dùng theo UID.
+```ts
+export type SendFriendRequestResponse = "";
+```
+
+### unblockUser
+- **Call**: `await api.friend.unblockUser(userId: string)` (or `await api.unblockUser(userId: string)`)
+- **Endpoint**: POST /api/friend/unblock
+- **Description**: Bỏ chặn tin nhắn đối với một người dùng.
+```ts
+export type UnBlockUserResponse = "";
+```
+
+### undoFriendRequest
+- **Call**: `await api.friend.undoFriendRequest(friendId: string)` (or `await api.undoFriendRequest(friendId: string)`)
+- **Endpoint**: POST /api/friend/undo
+- **Description**: Thu hồi (Hủy) lời mời kết bạn đã gửi trước đó.
+```ts
+export type UndoFriendRequestResponse = "";
+```
+
+### updateCloseFriend
+- **Call**: `await api.friend.updateCloseFriend(fids: string | string[], action: number = 1)` (or `await api.updateCloseFriend(fids: string | string[], action: number = 1)`)
+- **Endpoint**: POST /api/friend/closefr/update
+- **Description**: Thêm hoặc xóa người dùng khỏi danh sách Bạn thân (command 11421)
+```ts
+export type UpdateCloseFriendResponse = Record<string, unknown>;
+```
+
+### verifyFriend
+- **Call**: `await api.friend.verifyFriend(friendIds: string | string[], options: VerifyFriendOptions = {})` (or `await api.verifyFriend(friendIds: string | string[], options: VerifyFriendOptions = {})`)
+- **Endpoint**: POST /api/social/friend/verify
+- **Description**: Kiểm tra và xác thực danh sách bạn bè qua /api/social/friend/verify (command 11138)
+```ts
+export type VerifyFriendOptions = {
+    phonebookVersion?: number;
+    avatarSize?: number;
+    language?: string;
+};
+
+export type VerifyFriendResponse = {
+    profiles?: Record<string, unknown>;
+    unchangeds_profile?: string[];
+    [key: string]: unknown;
+};
+```
+
+## Domain: Hồ sơ cá nhân & Emoji Status (Profile) (`api.profile` — 22 APIs)
+Thông tin tài khoản, Mini Profile, đổi ảnh đại diện, cài đặt quyền riêng tư, trạng thái cảm xúc (Emoji Status), hồ sơ Doanh nghiệp và xác thực EKYC.
+
+### changeAccountAvatar
+- **Call**: `await api.profile.changeAccountAvatar(avatarSource: AttachmentSource)` (or `await api.changeAccountAvatar(avatarSource: AttachmentSource)`)
+- **Endpoint**: POST /api/profile/upavatar
+- **Description**: Thay đổi ảnh đại diện (Avatar) cho tài khoản cá nhân.
+```ts
+export type ChangeAccountAvatarResponse = "";
+```
+
+### deleteAvatar
+- **Call**: `await api.profile.deleteAvatar(photoId: string | string[])` (or `await api.deleteAvatar(photoId: string | string[])`)
+- **Endpoint**: GET /api/social/del-avatars
+- **Description**: Xóa một hoặc nhiều ảnh đại diện cũ trong kho ảnh đại diện.
+```ts
+export type DeleteAvatarResponse = {
+    delPhotoIds: string[];
+    errMap: {
+        [key: string]: {
+            err: number;
+        };
+    };
+};
+```
+
+### disableLimitSearchPhoneReminder
+- **Call**: `await api.profile.disableLimitSearchPhoneReminder(uid?: string)` (or `await api.disableLimitSearchPhoneReminder(uid?: string)`)
+- **Endpoint**: POST /api/social/profile/biz-off-remind
+- **Description**: Tắt thông báo nhắc nhở giới hạn tìm kiếm số điện thoại (command 12131)
+```ts
+export type DisableLimitSearchPhoneReminderResponse = Record<string, unknown>;
+```
+
+### fetchAccountInfo
+- **Call**: `await api.profile.fetchAccountInfo()` (or `await api.fetchAccountInfo()`)
+- **Endpoint**: GET /api/social/profile/me-v2
+- **Description**: API fetchAccountInfo thuộc phân hệ profile.
+```ts
+export type FetchAccountInfoResponse = { profile: User };
+```
+
+### getAvatarList
+- **Call**: `await api.profile.getAvatarList(count: number = 50, page: number = 1)` (or `await api.getAvatarList(count: number = 50, page: number = 1)`)
+- **Endpoint**: GET /api/social/avatar-list
+- **Description**: Lấy danh sách lịch sử các ảnh đại diện đã từng sử dụng của tài khoản.
+```ts
+export type GetAvatarListResponse = {
+    albumId: string;
+    nextPhotoId: string;
+    hasMore: number;
+    photos: {
+        photoId: string;
+        thumbnail: string;
+        url: string;
+        bkUrl: string;
+    }[];
+};
+```
+
+### getAvatarUrlProfile
+- **Call**: `await api.profile.getAvatarUrlProfile(friendIds: string | string[], avatarSize: AvatarSize = AvatarSize.Large)` (or `await api.getAvatarUrlProfile(friendIds: string | string[], avatarSize: AvatarSize = AvatarSize.Large)`)
+- **Endpoint**: GET /api/social/profile/avatar-url
+- **Description**: Lấy đường dẫn ảnh đại diện của danh sách hồ sơ người dùng.
+```ts
+export type GetAvatarUrlProfileResponse = {
+    [userId: string]: {
+        avatar: string;
+    };
+};
+```
+
+### getEmojiStatusConfig
+- **Call**: `await api.profile.getEmojiStatusConfig(version: number = 0)` (or `await api.getEmojiStatusConfig(version: number = 0)`)
+- **Endpoint**: GET /api/v1/emoji-status/resource-config
+- **Description**: Lấy cấu hình và danh sách bộ biểu tượng Trạng thái Emoji (Emoji Status - command 16300)
+```ts
+export type EmojiStatusItem = {
+    id: number;
+    caption: {
+        vi: string;
+        en: string;
+    };
+    thumb: string;
+    full: string;
+};
+
+export type GetEmojiStatusConfigResponse = {
+    expireTime: number;
+    config: {
+        emojis: EmojiStatusItem[];
+        [key: string]: unknown;
+    };
+};
+```
+
+### getEnterpriseProfiles
+- **Call**: `await api.profile.getEnterpriseProfiles(uids: string | string[])` (or `await api.getEnterpriseProfiles(uids: string | string[])`)
+- **Endpoint**: POST /api/enterprise/profiles
+- **Description**: Lấy thông tin hồ sơ doanh nghiệp (Zalo Enterprise) của một hoặc nhiều tài khoản (command 12193)
+```ts
+export type GetEnterpriseProfilesResponse = Record<string, unknown>;
+```
+
+### getFullAvatar
+- **Call**: `await api.profile.getFullAvatar(friendId: string)` (or `await api.getFullAvatar(friendId: string)`)
+- **Endpoint**: GET /api/social/profile/avatar
+- **Description**: Lấy ảnh đại diện kích thước gốc (Full HD) của một người dùng theo UID.
+```ts
+export type GetFullAvatarResponse = {
+    bk_full_avatar: string;
+    full_avatar: string;
+};
+```
+
+### getMiniProfile
+- **Call**: `await api.profile.getMiniProfile(friendIds: string[], avatarSize: number = 120)` (or `await api.getMiniProfile(friendIds: string[], avatarSize: number = 120)`)
+- **Endpoint**: POST /api/social/friend/getminiprofiles
+- **Description**: Lấy nhanh thông tin hồ sơ rút gọn (Avatar, Global ID, gói Biz) của danh sách người dùng (command 12134)
+```ts
+export type MiniProfileItem = {
+    userId: string;
+    avatar: string;
+    globalId: string;
+    type: number;
+    bizPkg?: {
+        label: string | null;
+        pkgId: number;
+    };
+    [key: string]: unknown;
+};
+
+export type GetMiniProfileResponse = Record<string, MiniProfileItem>;
+```
+
+### getProfileExtra
+- **Call**: `await api.profile.getProfileExtra(profileId?: string)` (or `await api.getProfileExtra(profileId?: string)`)
+- **Endpoint**: GET /api/social/profile/extra
+- **Description**: Lấy thông tin mở rộng của hồ sơ cá nhân (command 11864)
+```ts
+export type GetProfileExtraResponse = Record<string, unknown>;
+```
+
+### getProfileRank
+- **Call**: `await api.profile.getProfileRank(profileId?: string)` (or `await api.getProfileRank(profileId?: string)`)
+- **Endpoint**: GET /api/social/profile/getrank
+- **Description**: Lấy hạng tài khoản Zalo của một người dùng (ví dụ "WHITE", "GOLD" - command 12012)
+```ts
+export type GetProfileRankResponse = {
+    userRank: string;
+    [key: string]: unknown;
+};
+```
+
+### getProfileVerificationStatus
+- **Call**: `await api.profile.getProfileVerificationStatus()` (or `await api.getProfileVerificationStatus()`)
+- **Endpoint**: GET /api/social/profile/verification/status
+- **Description**: Kiểm tra trạng thái xác thực định danh (eKYC) của tài khoản Zalo (command 12150)
+```ts
+export type GetProfileVerificationStatusResponse = {
+    status: number;
+    [key: string]: unknown;
+};
+```
+
+### getSettings
+- **Call**: `await api.profile.getSettings()` (or `await api.getSettings()`)
+- **Endpoint**: GET /api/setting/me
+- **Description**: Lấy toàn bộ cấu hình quyền riêng tư và cài đặt của tài khoản hiện tại.
+```ts
+export type GetSettingsResponse = UserSetting;
+```
+
+### getUserInfo
+- **Call**: `await api.profile.getUserInfo(userId: string | string[], avatarSize: AvatarSize = AvatarSize.Small)` (or `await api.getUserInfo(userId: string | string[], avatarSize: AvatarSize = AvatarSize.Small)`)
+- **Endpoint**: POST /api/social/friend/getprofiles/v2
+- **Description**: Lấy thông tin hồ sơ chi tiết (Tên, Ảnh bìa, Ngày sinh, Giới tính, Bio, Zalo Business) của một hoặc nhiều UID.
+```ts
+export type ProfileInfo = User;
+
+export type UserInfoResponse = {
+    unchanged_profiles: Record<string, Partial<UnchangedProfileInfo>>;
+    phonebook_version: number;
+    changed_profiles: Record<string, ProfileInfo>;
+};
+```
+
+### pushProfileVerificationMessage
+- **Call**: `await api.profile.pushProfileVerificationMessage(options: PushProfileVerificationMessageOptions = {})` (or `await api.pushProfileVerificationMessage(options: PushProfileVerificationMessageOptions = {})`)
+- **Endpoint**: POST /api/social/ekyc/push-oa
+- **Description**: Yêu cầu đẩy tin nhắn hướng dẫn xác thực tài khoản (eKYC) từ Official Account (command 12151)
+```ts
+export type PushProfileVerificationMessageOptions = {
+    uid?: string;
+    groupName?: string;
+    type?: number;
+};
+
+export type PushProfileVerificationMessageResponse = Record<string, unknown>;
+```
+
+### registerTrialBizAccount
+- **Call**: `await api.profile.registerTrialBizAccount(uid?: string)` (or `await api.registerTrialBizAccount(uid?: string)`)
+- **Endpoint**: POST /api/social/profile/biz-register-trial-v2
+- **Description**: Đăng ký dùng thử gói Zalo Business V2 cho tài khoản (command 12152)
+```ts
+export type RegisterTrialBizAccountResponse = Record<string, unknown>;
+```
+
+### reuseAvatar
+- **Call**: `await api.profile.reuseAvatar(photoId: string)` (or `await api.reuseAvatar(photoId: string)`)
+- **Endpoint**: GET /api/social/reuse-avatar
+- **Description**: Sử dụng lại một ảnh đại diện cũ từ kho lịch sử ảnh đại diện.
+```ts
+export type ReuseAvatarResponse = null;
+```
+
+### updateProfile
+- **Call**: `await api.profile.updateProfile(payload: UpdateProfilePayload)` (or `await api.updateProfile(payload: UpdateProfilePayload)`)
+- **Endpoint**: POST /api/social/profile/update
+- **Description**: Cập nhật thông tin cá nhân (Tên hiển thị, Ngày sinh, Giới tính) và thông tin Zalo Business.
+```ts
+export type UpdateProfilePayload = {
+    profile: {
+        name: string;
+        /**
+         * Date of birth in the format YYYY-MM-DD
+         */
+        dob: `${string}-${string}-${string}`;
+        gender: Gender;
+    };
+    biz?: Partial<{
+        cate: BusinessCategory;
+        description: string;
+        address: string;
+        website: string;
+        email: string;
+    }>;
+};
+
+export type UpdateProfileResponse = "";
+```
+
+### updateProfileBio
+- **Call**: `await api.profile.updateProfileBio(status: string)` (or `await api.updateProfileBio(status: string)`)
+- **Endpoint**: POST /api/social/profile/status
+- **Description**: Cập nhật dòng tiểu sử (Status / Bio) trên trang cá nhân.
+```ts
+export type UpdateProfileBioResponse = "";
+```
+
+### updateProfileMode
+- **Call**: `await api.profile.updateProfileMode(mode: number)` (or `await api.updateProfileMode(mode: number)`)
+- **Endpoint**: GET /api/social/profile/mode
+- **Description**: Cập nhật chế độ hồ sơ người dùng (command 11865)
+```ts
+export type UpdateProfileModeResponse = Record<string, unknown>;
+```
+
+### updateSettings
+- **Call**: `await api.profile.updateSettings(type: UpdateSettingsType, value: number)` (or `await api.updateSettings(type: UpdateSettingsType, value: number)`)
+- **Endpoint**: GET /api/setting/update
+- **Description**: Cập nhật cài đặt quyền riêng tư (Hiển thị ngày sinh, Trạng thái Online, Đã xem, Nguồn nhận tin nhắn/cuộc gọi, Nguồn kết bạn).
+```ts
+export type UpdateSettingsResponse = "";
+
+export enum UpdateSettingsType {
+    ViewBirthday = "view_birthday",
+    ShowOnlineStatus = "show_online_status",
+    DisplaySeenStatus = "display_seen_status",
+    ReceiveMessage = "receive_message",
+    AcceptCall = "accept_stranger_call",
+    AddFriendViaPhone = "add_friend_via_phone",
+    AddFriendViaQR = "add_friend_via_qr",
+    AddFriendViaGroup = "add_friend_via_group",
+    AddFriendViaContact = "add_friend_via_contact",
+    DisplayOnRecommendFriend = "display_on_recommend_friend",
+    ArchivedChat = "archivedChatStatus",
+    QuickMessage = "quickMessageStatus",
+}
+```
+
+## Domain: Đồng bộ Mobile ZDB 4.0 (Sync) (`api.sync` — 10 APIs)
+Đồng bộ toàn bộ lịch sử tin nhắn từ điện thoại sang PC qua giao thức RSA-2048 & ZDB 4.0 AES-256-CBC multi-chunk, kiểm tra Backup, Cross-DB và đồng bộ hành động Media.
+
+### cancelPullMobile
+- **Call**: `await api.sync.cancelPullMobile({ public_key, pc_name = "Web" }: CancelPullMobileParams)` (or `await api.cancelPullMobile({ public_key, pc_name = "Web" }: CancelPullMobileParams)`)
+- **Endpoint**: GET /api/message/cancel_pull_mobile_msg
+- **Description**: Huỷ yêu cầu đồng bộ tin nhắn từ điện thoại đang chờ (cancel_pull_mobile_msg, command 12700).
+```ts
+export type CancelPullMobileResponse = {
+    error_code?: number | string;
+    error_message?: string;
+    data?: string;
+    [key: string]: unknown;
+};
+
+export type CancelPullMobileParams = {
+    public_key: string;
+    pc_name?: string;
+};
+```
+
+### deleteMobileMsgSnapshot
+- **Call**: `await api.sync.deleteMobileMsgSnapshot(publicKey: string)` (or `await api.deleteMobileMsgSnapshot(publicKey: string)`)
+- **Endpoint**: GET /api/message/delete_snapshot_mobile_msg
+- **Description**: Xóa bản chụp nhanh (snapshot) dữ liệu đồng bộ tin nhắn từ thiết bị di động sau khi hoàn tất (command 12003)
+```ts
+export type DeleteMobileMsgSnapshotResponse = Record<string, unknown>;
+```
+
+### downloadTransferSync
+- **Call**: `await api.sync.downloadTransferSync(options: DownloadTransferSyncOptions)` (or `await api.downloadTransferSync(options: DownloadTransferSyncOptions)`)
+- **Endpoint**: GET /api/transfer-sync-v2/download
+- **Description**: Tải khối dữ liệu snapshot đồng bộ tin nhắn từ máy chủ transfersync.zaloapp.com
+```ts
+export type DownloadTransferSyncOptions =
+    | string
+    | {
+          key: string;
+          exp: number | string;
+          sig: string;
+      };
+```
+
+### getBackupMsgInfo
+- **Call**: `await api.sync.getBackupMsgInfo(nretry: number = 0)` (or `await api.getBackupMsgInfo(nretry: number = 0)`)
+- **Endpoint**: GET /api/message/get_backupmsginfo
+- **Description**: Lấy thông tin bản sao lưu tin nhắn hiện có trên máy chủ (command 12096)
+```ts
+export type GetBackupMsgInfoResponse = Record<string, unknown>;
+```
+
+### getCrossDbInfo
+- **Call**: `await api.sync.getCrossDbInfo(options: GetCrossDbInfoOptions = {})` (or `await api.getCrossDbInfo(options: GetCrossDbInfoOptions = {})`)
+- **Endpoint**: GET /api/message/get_crossdb
+- **Description**: Lấy thông tin cơ sở dữ liệu chéo (Cross-DB) phục vụ đồng bộ dữ liệu sang máy tính (command 12412)
+```ts
+export type GetCrossDbInfoOptions = {
+    syncSession?: string;
+    pcName?: string;
+    nretry?: number;
+};
+
+export type GetCrossDbInfoResponse = Record<string, unknown>;
+```
+
+### getSyncData
+- **Call**: `await api.sync.getSyncData({ url, encrypted_key, file_name, file_size, checksum_code, from_seq_id, is_full_transfer, returnStream = false, savePath = "./", }: GetSyncDataParams)` (or `await api.getSyncData({ url, encrypted_key, file_name, file_size, checksum_code, from_seq_id, is_full_transfer, returnStream = false, savePath = "./", }: GetSyncDataParams)`)
+- **Description**: Tải xuống file sao lưu tin nhắn từ sự kiện syncmsg_info (.db.crypt, định dạng ZDB4.0) và lưu ra ổ đĩa hoặc trả về ReadableStream.
+```ts
+export type GetSyncDataParams = {
+    url: string;
+    encrypted_key: string;
+    file_name: string;
+    file_size: number;
+    checksum_code: string;
+    from_seq_id: number;
+    is_full_transfer: number;
+    returnStream?: boolean;
+    savePath?: string;
+};
+```
+
+### pullMobile
+- **Call**: `await api.sync.pullMobile({ public_key, pc_name = "Web", from_seq_id = 0, is_retry = 0, min_seq_id = 0, temp_key = "", }: PullMobileParams)` (or `await api.pullMobile({ public_key, pc_name = "Web", from_seq_id = 0, is_retry = 0, min_seq_id = 0, temp_key = "", }: PullMobileParams)`)
+- **Endpoint**: GET /api/message/pull_mobile_msg
+- **Description**: Yêu cầu thiết bị di động Zalo đóng gói và tải lên bản sao lưu tin nhắn (pull_mobile_msg, command 12000). Sự kiện tiến trình (user_confirm, syncmsg_info, transfer_error) sẽ được đẩy về qua api.listener.on("sync_event").
+```ts
+export type PullMobileResponse = {
+    error_code?: number | string;
+    error_message?: string;
+    data?: string;
+    [key: string]: unknown;
+};
+
+export type PullMobileParams = {
+    public_key: string;
+    pc_name?: string;
+    from_seq_id?: number;
+    is_retry?: number;
+    min_seq_id?: number;
+    temp_key?: string;
+};
+```
+
+### requestSyncFromPhone
+- **Call**: `await api.sync.requestSyncFromPhone(options: RequestSyncFromPhoneOptions = {},)` (or `await api.requestSyncFromPhone(options: RequestSyncFromPhoneOptions = {},)`)
+- **Description**: Phát tín hiệu yêu cầu đồng bộ tin nhắn từ ứng dụng Zalo trên điện thoại (pull_mobile_msg, command 12000). Tự động sinh cặp khoá RSA 2048-bit (nếu chưa truyền vào) và gọi api.pullMobile(...). Điện thoại của người dùng sẽ hiển thị thông báo yêu cầu xác nhận đồng bộ (hoặc tự động đồng bộ nếu có tempKey từ transfer_after_login). Lắng nghe sự kiện api.listener.on("sync_event", ...) để nhận tiến trình xác nhận (user_confirm) và thông tin file sao lưu (syncmsg_info).
+```ts
+export type RequestSyncFromPhoneOptions = {
+    pcName?: string;
+    fromSeqId?: number;
+    isRetry?: number;
+    minSeqId?: number;
+    tempKey?: string;
+    publicKeyBase64?: string;
+    privateKeyBase64?: string;
+    publicKey?: string;
+    privateKey?: string;
+};
+
+export type RequestSyncFromPhoneResponse = {
+    success: boolean;
+    pcName: string;
+    publicKeyBase64: string;
+    privateKeyBase64: string;
+    publicKey: string;
+    privateKey: string;
+};
+```
+
+### submitSyncMediaActions
+- **Call**: `await api.sync.submitSyncMediaActions(syncList: unknown[])` (or `await api.submitSyncMediaActions(syncList: unknown[])`)
+- **Endpoint**: POST /api/sync_action/media
+- **Description**: Gửi danh sách hành động đồng bộ hóa tệp đa phương tiện lên máy chủ (command 16213)
+```ts
+export type SubmitSyncMediaActionsResponse = Record<string, unknown>;
+```
+
+### uploadBackupChunk
+- **Call**: `await api.sync.uploadBackupChunk(formData: BodyInit | Buffer | Uint8Array)` (or `await api.uploadBackupChunk(formData: BodyInit | Buffer | Uint8Array)`)
+- **Endpoint**: POST /api/backuppc2mb/upload
+- **Description**: Tải lên gói dữ liệu phân mảnh (chunk) sao lưu tin nhắn từ máy tính sang điện thoại (command 13538)
+```ts
+export type UploadBackupChunkResponse = Record<string, unknown>;
+```
+
+## Domain: Đám mây ZCloud & ZFamily (ZCloud) (`api.zcloud` — 16 APIs)
+Truy vấn dung lượng My Cloud / ZCloud, ZFamily, khóa giải mã ViewerKey (98yS AES-256-CBC), lấy link tải hàng loạt, quản lý hàng đợi và di chuyển dữ liệu.
+
+### ackCloudOnboarding
+- **Call**: `await api.zcloud.ackCloudOnboarding(payload: Record<string, unknown> = {}, viewerKeyInfo?: GetCloudViewerKeyResponse,)` (or `await api.ackCloudOnboarding(payload: Record<string, unknown> = {}, viewerKeyInfo?: GetCloudViewerKeyResponse,)`)
+- **Endpoint**: POST /cloudmedia/onboarding/pc/ack/v1
+- **Description**: Xác nhận hoàn tất bước khởi tạo (Onboarding ACK V1) trên ZCloud (command 12746)
+```ts
+export type AckCloudOnboardingResponse = Record<string, unknown>;
+```
+
+### getCloudDownloadUrls
+- **Call**: `await api.zcloud.getCloudDownloadUrls(listNoiseIds: string | string[], viewerKeyInfo?: GetCloudViewerKeyResponse,)` (or `await api.getCloudDownloadUrls(listNoiseIds: string | string[], viewerKeyInfo?: GetCloudViewerKeyResponse,)`)
+- **Endpoint**: GET /cloudmedia/downloadurls/pc/v1
+- **Description**: Lấy danh sách đường dẫn tải xuống các tệp Media lưu trữ trên ZCloud theo noiseIds (command 12743)
+```ts
+export type GetCloudDownloadUrlsResponse = Record<string, unknown>;
+```
+
+### getCloudInfo
+- **Call**: `await api.zcloud.getCloudInfo(viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.getCloudInfo(viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: GET /zalocloud/cloudinfopcweb/v1/info
+- **Description**: Lấy thông tin gói thuê bao Zalo Cloud (command 12754)
+```ts
+export type GetCloudInfoResponse = Record<string, unknown>;
+```
+
+### getCloudSettings
+- **Call**: `await api.zcloud.getCloudSettings(viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.getCloudSettings(viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: GET /cloudmedia/info/pc/v1/cloud-settings
+- **Description**: Lấy cấu hình giới hạn tệp và cài đặt ZCloud của tài khoản (command 12756)
+```ts
+export type GetCloudSettingsResponse = {
+    cloud_media_file_size_limit: number;
+    enable_community: number;
+    my_cloud_file_size_limit: number;
+    opt_in: number;
+    key_export: Record<string, unknown>;
+    enable_offload: number;
+};
+```
+
+### getCloudUploadUrl
+- **Call**: `await api.zcloud.getCloudUploadUrl(numberOfFiles: number = 1, viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.getCloudUploadUrl(numberOfFiles: number = 1, viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: GET /zalocloud/migration/v1/getuploadurl
+- **Description**: Lấy đường dẫn tải lên tệp di trú lên ZCloud (command 12752)
+```ts
+export type GetCloudUploadUrlResponse = Record<string, unknown>;
+```
+
+### getCloudViewerKey
+- **Call**: `await api.zcloud.getCloudViewerKey(forceRefresh = false)` (or `await api.getCloudViewerKey(forceRefresh = false)`)
+- **Endpoint**: GET /api/getCloudViewerKey
+- **Description**: Lấy cặp khóa phiên (viewer_key và khóa giải mã AES-256 enk) cho hệ thống ZCloud / MyCloud (command 12741). Tự động cache trong bộ nhớ ctx.zcloudViewerKeyCache (TTL 15 phút) để tối ưu hiệu năng khi gọi liên tiếp.
+```ts
+export type GetCloudViewerKeyResponse = {
+    viewer_key: string;
+    enk: string;
+};
+```
+
+### getFamilyProfile
+- **Call**: `await api.zcloud.getFamilyProfile(familyKeyInfo?: GetFamilyViewerKeyResponse)` (or `await api.getFamilyProfile(familyKeyInfo?: GetFamilyViewerKeyResponse)`)
+- **Endpoint**: GET /zfamily/pc/family-profile/v1/family
+- **Description**: Lấy thông tin nhóm gia đình ZFamily (command 12757)
+```ts
+export type GetFamilyProfileResponse = Record<string, unknown>;
+```
+
+### getFamilyUsage
+- **Call**: `await api.zcloud.getFamilyUsage(viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.getFamilyUsage(viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: GET /cloudmedia/info/pc/v1/family-usage
+- **Description**: Kiểm tra dung lượng sử dụng gói ZCloud Gia đình (Family Usage - command 12758)
+```ts
+export type GetFamilyUsageResponse = {
+    usage: number;
+    quota: number;
+    lastUpdated: number;
+};
+```
+
+### getFamilyViewerKey
+- **Call**: `await api.zcloud.getFamilyViewerKey(forceRefresh = false)` (or `await api.getFamilyViewerKey(forceRefresh = false)`)
+- **Endpoint**: GET /api/getFamilyViewerKey
+- **Description**: Lấy cặp khóa phiên (viewer_key và khóa giải mã AES-256 enk) cho gói gia đình ZFamily (command 12759). Tự động cache trong bộ nhớ ctx.zfamilyViewerKeyCache (TTL 15 phút) để tối ưu hiệu năng khi gọi liên tiếp.
+```ts
+export type GetFamilyViewerKeyResponse = {
+    viewer_key: string;
+    enk: string;
+};
+```
+
+### getUsageMyCloud
+- **Call**: `await api.zcloud.getUsageMyCloud(viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.getUsageMyCloud(viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: GET /cloudmedia/info/pc/v1/usage-mycloud
+- **Description**: Kiểm tra hạn mức và dung lượng sử dụng Cloud của tôi (MyCloud - command 12748)
+```ts
+export type GetUsageMyCloudResponse = {
+    usage: number;
+    quota: number;
+    plan: number;
+};
+```
+
+### getUsageZCloud
+- **Call**: `await api.zcloud.getUsageZCloud(viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.getUsageZCloud(viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: GET /cloudmedia/info/pc/v2/usage
+- **Description**: Kiểm tra dung lượng sử dụng ZCloud V2 (bao gồm MyCloud và Sao lưu tin nhắn - command 12749)
+```ts
+export type GetUsageZCloudResponse = {
+    service_usage: {
+        my_cloud: number;
+        message_backup: number;
+    };
+    usage: number;
+    quota: number;
+    plan: number;
+};
+```
+
+### migrateCloudRecent
+- **Call**: `await api.zcloud.migrateCloudRecent(payload: Record<string, unknown>, viewerKeyInfo?: GetCloudViewerKeyResponse,)` (or `await api.migrateCloudRecent(payload: Record<string, unknown>, viewerKeyInfo?: GetCloudViewerKeyResponse,)`)
+- **Endpoint**: POST /zalocloud/migration/v1/migraterecent
+- **Description**: Thực hiện di trú dữ liệu tệp tin gần đây lên ZCloud (command 12753)
+```ts
+export type MigrateCloudRecentResponse = Record<string, unknown>;
+```
+
+### resetCloudQueue
+- **Call**: `await api.zcloud.resetCloudQueue(viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.resetCloudQueue(viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: GET /cloudmedia/queue/pc/reset
+- **Description**: Đặt lại hàng đợi đồng bộ Media trên ZCloud (command 12744)
+```ts
+export type ResetCloudQueueResponse = Record<string, unknown>;
+```
+
+### submitCloudMediaExtInfo
+- **Call**: `await api.zcloud.submitCloudMediaExtInfo(info: unknown[], viewerKeyInfo?: GetCloudViewerKeyResponse)` (or `await api.submitCloudMediaExtInfo(info: unknown[], viewerKeyInfo?: GetCloudViewerKeyResponse)`)
+- **Endpoint**: POST /cloudmedia/queue/pc/submitMediaExtInfo
+- **Description**: Gửi thông tin mở rộng (siêu dữ liệu / khóa giải mã) của các tệp Media lên hàng đợi ZCloud (command 12745)
+```ts
+export type SubmitCloudMediaExtInfoResponse = {
+    noiseIdsErr?: string[];
+    [key: string]: unknown;
+};
+```
+
+### submitCloudVerifyAction
+- **Call**: `await api.zcloud.submitCloudVerifyAction(payload: Record<string, unknown>, viewerKeyInfo?: GetCloudViewerKeyResponse,)` (or `await api.submitCloudVerifyAction(payload: Record<string, unknown>, viewerKeyInfo?: GetCloudViewerKeyResponse,)`)
+- **Endpoint**: POST /cloudmedia/onboarding/pc/ack/v2
+- **Description**: Gửi hành động xác thực bảo mật ZCloud (Onboarding ACK V2 - command 12750)
+```ts
+export type SubmitCloudVerifyActionResponse = Record<string, unknown>;
+```
+
+### verifyCloudMedia
+- **Call**: `await api.zcloud.verifyCloudMedia(options: VerifyCloudMediaOptions = {}, viewerKeyInfo?: GetCloudViewerKeyResponse,)` (or `await api.verifyCloudMedia(options: VerifyCloudMediaOptions = {}, viewerKeyInfo?: GetCloudViewerKeyResponse,)`)
+- **Endpoint**: GET /cloudmedia/queue/pc/verify
+- **Description**: Kiểm tra và lấy danh sách mục Media lưu trữ trên ZCloud (command 12740 / 12761)
+```ts
+export type VerifyCloudMediaOptions = {
+    lastNoiseId?: string;
+    loadType?: number;
+    listNoiseIds?: string[];
+    trackingSource?: number;
+};
+
+export type VerifyCloudMediaResponse = {
+    lastNoiseId: string;
+    hasMore: number;
+    mediaItems: Record<string, unknown>[];
+    listVerifyNoiseIds: string[];
+};
+```
+
+## Domain: Gọi thoại, Video & Gọi nhóm (Call) (`api.call` — 30 APIs)
+Điều khiển trọn vẹn 30 API cuộc gọi thoại, video 1-1, gọi nhóm và bộ máy Call Engine (ZaloRtcSession UDP/SRTP 2 chiều & ZaloCallController).
+
+### addUserGroupCall
+- **Call**: `await api.call.addUserGroupCall(callId: number, options: AddUserGroupCallOptions,)` (or `await api.addUserGroupCall(callId: number, options: AddUserGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/adduser
+- **Description**: Mời thêm thành viên mới vào cuộc gọi nhóm đang diễn ra (cmd 12435 - /api/voicecall/group/adduser).
+```ts
+export type AddUserGroupCallOptions = {
+    calleeId?: string;
+    callType?: CallType | number;
+    hostCall: string | number;
+    groupId?: string | number;
+    groupName?: string;
+    groupAvatar?: string;
+    maxUsers?: number;
+    rtpAddress?: string;
+    rtcpAddress?: string;
+    codec?: string;
+    extendData?: string | Record<string, unknown>;
+    data?: string | Record<string, unknown>;
+    session: string;
+    partners: string[];
+};
+
+export type AddUserGroupCallResponse = Record<string, unknown>;
+```
+
+### answerAckVoiceCall
+- **Call**: `await api.call.answerAckVoiceCall(calleeId: string, callId: number, options: AnswerAckVoiceCallOptions = {},)` (or `await api.answerAckVoiceCall(calleeId: string, callId: number, options: AnswerAckVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/answerack
+- **Description**: Gửi xác nhận hoàn tất bắt tay nhận cuộc gọi 1-1 (cmd 11304 - /api/voicecall/answerack, signal 408).
+```ts
+export type AnswerAckVoiceCallOptions = {
+    status?: number;
+};
+
+export type AnswerAckVoiceCallResponse = Record<string, unknown>;
+```
+
+### answerGroupCall
+- **Call**: `await api.call.answerGroupCall(callId: number, options: AnswerGroupCallOptions,)` (or `await api.answerGroupCall(callId: number, options: AnswerGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/answer
+- **Description**: Chấp nhận tham gia cuộc gọi nhóm khi nhận được lời mời (cmd 12436 - /api/voicecall/group/answer).
+```ts
+export type AnswerGroupCallOptions = {
+    calleeId?: string;
+    callType?: CallType | number;
+    hostCall: string | number;
+    groupId?: string | number;
+    session?: string;
+    status?: number;
+    data?: string | Record<string, unknown>;
+    partners?: string[];
+};
+
+export type AnswerGroupCallResponse = Record<string, unknown>;
+```
+
+### answerVoiceCall
+- **Call**: `await api.call.answerVoiceCall(callerId: string, callId: number, options: AnswerVoiceCallOptions = {},)` (or `await api.answerVoiceCall(callerId: string, callId: number, options: AnswerVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/answer
+- **Description**: Chấp nhận (Bắt máy) cuộc gọi Thoại/Video 1-1 đến (cmd 11303 - /api/voicecall/answer, signal 402).
+```ts
+export type AnswerVoiceCallOptions = {
+    status?: number;
+    codec?: string;
+    rtcpAddress?: string;
+    rtpAddress?: string;
+    sessionId?: string;
+    extendData?: string | Record<string, unknown>;
+    subCommand?: number;
+};
+
+export type AnswerVoiceCallResponse = Record<string, unknown>;
+```
+
+### broadcastGroupCallState
+- **Call**: `await api.call.broadcastGroupCallState(callId: number, options: BroadcastGroupCallStateOptions,)` (or `await api.broadcastGroupCallState(callId: number, options: BroadcastGroupCallStateOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/broadcast
+- **Description**: Phát quảng bá trạng thái thiết bị (Mic, Camera, Screen Share) tới các thành viên trong cuộc gọi nhóm (cmd 12098 - /api/voicecall/group/broadcast).
+```ts
+export type BroadcastGroupCallStateOptions = {
+    hostCall: string | number;
+    userId?: string | number;
+    callState?: number;
+    audioState?: number;
+    videoState?: number;
+    params?: string | Record<string, unknown>;
+};
+
+export type BroadcastGroupCallStateResponse = Record<string, unknown>;
+```
+
+### cancelGroupCall
+- **Call**: `await api.call.cancelGroupCall(callId: number, options: CancelGroupCallOptions,)` (or `await api.cancelGroupCall(callId: number, options: CancelGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/cancel
+- **Description**: Hủy lời mời cuộc gọi nhóm (cmd 12437 - /api/voicecall/group/cancel).
+```ts
+export type CancelGroupCallOptions = {
+    calleeId?: string;
+    callType?: CallType | number;
+    hostCall: string | number;
+    groupId?: string | number;
+    session?: string;
+    status?: number;
+    duration?: number;
+    data?: string | Record<string, unknown>;
+    partners?: string[];
+};
+
+export type CancelGroupCallResponse = Record<string, unknown>;
+```
+
+### cancelVoiceCall
+- **Call**: `await api.call.cancelVoiceCall(calleeId: string, callId: number, options: CancelVoiceCallOptions = {},)` (or `await api.cancelVoiceCall(calleeId: string, callId: number, options: CancelVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/cancel
+- **Description**: Hủy cuộc gọi 1-1 đang đổ chuông trước khi người nhận bắt máy (cmd 11305 - /api/voicecall/cancel, signal 405).
+```ts
+export type CancelVoiceCallOptions = {
+    callType?: CallType | number;
+    status?: number;
+};
+
+export type CancelVoiceCallResponse = Record<string, unknown>;
+```
+
+### createController
+- **Call**: `await api.call.createController(options: ZaloCallControllerOptions = {})` (or `await api.createController(options: ZaloCallControllerOptions = {})`)
+- **Endpoint**: GET /apis
+- **Description**: Khởi tạo bộ điều phối cuộc gọi ZaloCallController quản lý vòng đời gọi đi, nhận cuộc gọi đến và kênh IPC cục bộ.
+
+### createRtcSession
+- **Call**: `await api.call.createRtcSession(options: ZaloRtcSessionOptions = {})` (or `await api.createRtcSession(options: ZaloRtcSessionOptions = {})`)
+- **Endpoint**: GET /apis
+- **Description**: Khởi tạo phiên gọi thoại / video 2 chiều thuần TypeScript (ZaloRtcSession — UDP ZRTPPacket + SRTP + H.264 Annex-B + Mobile Direct UDP Handoff).
+
+### endGroupCall
+- **Call**: `await api.call.endGroupCall(callId: number, options: EndGroupCallOptions)` (or `await api.endGroupCall(callId: number, options: EndGroupCallOptions)`)
+- **Endpoint**: GET /api/voicecall/group/endcall
+- **Description**: Rời khỏi cuộc gọi nhóm hoặc từ chối lời mời gọi nhóm (cmd 12438 - /api/voicecall/group/endcall).
+```ts
+export type EndGroupCallOptions = {
+    calleeId?: string;
+    callType?: CallType | number;
+    hostCall: string | number;
+    groupId?: string | number;
+    session?: string;
+    status?: number;
+    duration?: number;
+    data?: string | Record<string, unknown>;
+    partners?: string[];
+};
+
+export type EndGroupCallResponse = Record<string, unknown>;
+```
+
+### endVoiceCall
+- **Call**: `await api.call.endVoiceCall(calleeId: string, callId: number, options: EndVoiceCallOptions = {},)` (or `await api.endVoiceCall(calleeId: string, callId: number, options: EndVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/endcall
+- **Description**: Kết thúc cuộc gọi 1-1 đang diễn ra hoặc từ chối cuộc gọi đến (cmd 11306 - /api/voicecall/endcall, signal 404).
+```ts
+export type EndVoiceCallOptions = {
+    status?: number;
+};
+
+export type EndVoiceCallResponse = Record<string, unknown>;
+```
+
+### finishGroupCall
+- **Call**: `await api.call.finishGroupCall(callId: number, options: FinishGroupCallOptions,)` (or `await api.finishGroupCall(callId: number, options: FinishGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/finish
+- **Description**: Kết thúc hoàn toàn phòng gọi nhóm cho tất cả thành viên (cmd 12446 - /api/voicecall/group/finish).
+```ts
+export type FinishGroupCallOptions = {
+    callType?: CallType | number;
+    data?: string | Record<string, unknown>;
+    duration?: number;
+    hostCall: string | number;
+    partners?: string[];
+    status?: number;
+    joinTime?: number;
+};
+
+export type FinishGroupCallResponse = Record<string, unknown>;
+```
+
+### getGroupCallState
+- **Call**: `await api.call.getGroupCallState(callId: number, hostCall: string | number, callType: CallType | number = CallType.GroupAudio,)` (or `await api.getGroupCallState(callId: number, hostCall: string | number, callType: CallType | number = CallType.GroupAudio,)`)
+- **Endpoint**: GET /api/voicecall/group/state
+- **Description**: Truy vấn trạng thái hiện tại và danh sách thành viên trong phòng gọi nhóm (cmd 12445 - /api/voicecall/group/state).
+```ts
+export type GetGroupCallStateResponse = Record<string, unknown>;
+```
+
+### holdVoiceCall
+- **Call**: `await api.call.holdVoiceCall(toId: string, options: HoldVoiceCallOptions = {},)` (or `await api.holdVoiceCall(toId: string, options: HoldVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/holdreq, /api/voicecall/holdresp, /api/voicecall/
+- **Description**: Tạm giữ (Hold) cuộc gọi 1-1 đang diễn ra hoặc phản hồi yêu cầu tạm giữ (cmd 11307 holdreq / cmd 11308 holdresp, signal 411/412).
+```ts
+export type HoldVoiceCallOptions = {
+    isResponse?: boolean;
+};
+
+export type HoldVoiceCallResponse = Record<string, unknown>;
+```
+
+### joinGroupCall
+- **Call**: `await api.call.joinGroupCall(callId: number, options: JoinGroupCallOptions)` (or `await api.joinGroupCall(callId: number, options: JoinGroupCallOptions)`)
+- **Endpoint**: GET /api/voicecall/group/join
+- **Description**: Chủ động tham gia vào một cuộc gọi nhóm đang diễn ra từ banner nhóm (cmd 12043 - /api/voicecall/group/join).
+```ts
+export type JoinGroupCallOptions = {
+    userId?: string | number;
+    hostCall: string | number;
+    status?: number;
+    srcJoinCall?: number;
+    audioState?: number;
+    videoState?: number;
+    data?: string | Record<string, unknown>;
+};
+
+export type JoinGroupCallResponse = Record<string, unknown>;
+```
+
+### logEndVoiceCall
+- **Call**: `await api.call.logEndVoiceCall(partnerId: string, callId: number, options: LogEndVoiceCallOptions = {},)` (or `await api.logEndVoiceCall(partnerId: string, callId: number, options: LogEndVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/logendcall
+- **Description**: Gửi thống kê chất lượng cuộc gọi (QoS/Billing stats) sau khi kết thúc cuộc gọi 1-1 (cmd 11311 - /api/voicecall/logendcall, signal 406).
+```ts
+export type LogEndVoiceCallOptions = {
+    status?: number;
+    logData?: string | Record<string, unknown>;
+    duration?: number;
+    role?: boolean | number;
+};
+
+export type LogEndVoiceCallResponse = Record<string, unknown>;
+```
+
+### notifyGroupCall
+- **Call**: `await api.call.notifyGroupCall(callId: number, options: NotifyGroupCallOptions,)` (or `await api.notifyGroupCall(callId: number, options: NotifyGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/notify
+- **Description**: Gửi thông báo sự kiện cuộc gọi nhóm vào luồng chat nhóm (cmd 12447 - /api/voicecall/group/notify).
+```ts
+export type NotifyGroupCallOptions = {
+    hostCall: string | number;
+    callType?: CallType | number;
+    status?: number;
+    data?: string | Record<string, unknown>;
+};
+
+export type NotifyGroupCallResponse = Record<string, unknown>;
+```
+
+### pingGroupCall
+- **Call**: `await api.call.pingGroupCall(callId: number, options: PingGroupCallOptions)` (or `await api.pingGroupCall(callId: number, options: PingGroupCallOptions)`)
+- **Endpoint**: GET /api/voicecall/group/ping
+- **Description**: Gửi nhịp tim (Heartbeat Ping) duy trì kết nối của thành viên trong phòng gọi nhóm (cmd 12097 - /api/voicecall/group/ping).
+```ts
+export type PingGroupCallOptions = {
+    hostCall: string | number;
+    userId?: string | number;
+    callState?: number;
+    audioState?: number;
+    videoState?: number;
+    params?: string | Record<string, unknown>;
+};
+
+export type PingGroupCallResponse = Record<string, unknown>;
+```
+
+### requestAudioToVideoCall
+- **Call**: `await api.call.requestAudioToVideoCall(uidTo: string, callId: number, options: RequestAudioToVideoCallOptions = {},)` (or `await api.requestAudioToVideoCall(uidTo: string, callId: number, options: RequestAudioToVideoCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/requestaudio2video
+- **Description**: Yêu cầu nâng cấp từ cuộc gọi Thoại sang cuộc gọi Video hoặc phản hồi yêu cầu (cmd 12056 - /api/voicecall/requestaudio2video).
+```ts
+export type RequestAudioToVideoCallOptions = {
+    status?: number;
+};
+
+export type RequestAudioToVideoCallResponse = Record<string, unknown>;
+```
+
+### requestGroupCall
+- **Call**: `await api.call.requestGroupCall(groupId: string, options: RequestGroupCallOptions,)` (or `await api.requestGroupCall(groupId: string, options: RequestGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/requestcall
+- **Description**: Bước 1 gọi nhóm (cmd 12433 - /api/voicecall/group/requestcall): Xin cấp phát phòng gọi nhóm (Group Call Room & RTP/ZRTC servers).
+```ts
+export type RequestGroupCallOptions = {
+    callId?: number;
+    typeRequest?: CallType | number;
+    data?: string | Record<string, unknown>;
+    partners: string[];
+    groupName?: string;
+    groupAvatar?: string;
+    maxUsers?: number;
+    extraData?: string;
+};
+
+export type RequestGroupCallResponse = Record<string, unknown>;
+```
+
+### requestShareScreenCall
+- **Call**: `await api.call.requestShareScreenCall(uidTo: string, callId: number, options: RequestShareScreenCallOptions = {},)` (or `await api.requestShareScreenCall(uidTo: string, callId: number, options: RequestShareScreenCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/requestsharescreen
+- **Description**: Yêu cầu bắt đầu hoặc kết thúc chia sẻ màn hình (Screen Share) trong cuộc gọi 1-1 (cmd 12064 - /api/voicecall/requestsharescreen).
+```ts
+export type RequestShareScreenCallOptions = {
+    status?: number;
+};
+
+export type RequestShareScreenCallResponse = Record<string, unknown>;
+```
+
+### requestVoiceCall
+- **Call**: `await api.call.requestVoiceCall(calleeId: string, options: RequestVoiceCallOptions = {},)` (or `await api.requestVoiceCall(calleeId: string, options: RequestVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/requestcall
+- **Description**: Bước 1 gọi 1-1 (cmd 11300 - /api/voicecall/requestcall, signal 401): Xin cấp phát phòng gọi 1-1 (callId, sessId, rtpServer, rtcpServer, zrtpKey, codec).
+```ts
+export type RequestVoiceCallOptions = {
+    callType?: CallType;
+    callId?: number;
+    codec?: string;
+};
+
+export type RequestVoiceCallResponse = RequestCallServerInfo & {
+    callId: number;
+};
+```
+
+### ringRingGroupCall
+- **Call**: `await api.call.ringRingGroupCall(callId: number, options: RingRingGroupCallOptions,)` (or `await api.ringRingGroupCall(callId: number, options: RingRingGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/ringring
+- **Description**: Báo hiệu thiết bị đang đổ chuông cho lời mời gọi nhóm (cmd 12439 - /api/voicecall/group/ringring).
+```ts
+export type RingRingGroupCallOptions = {
+    calleeId?: string;
+    callType?: CallType | number;
+    hostCall: string | number;
+    groupId?: string | number;
+    session?: string;
+    status?: number;
+    data?: string | Record<string, unknown>;
+    partners?: string[];
+};
+
+export type RingRingGroupCallResponse = Record<string, unknown>;
+```
+
+### ringRingVoiceCall
+- **Call**: `await api.call.ringRingVoiceCall(callerId: string, callId: number, options: RingRingVoiceCallOptions = {},)` (or `await api.ringRingVoiceCall(callerId: string, callId: number, options: RingRingVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/ringring
+- **Description**: Báo hiệu thiết bị đang đổ chuông cho cuộc gọi 1-1 đến (cmd 11302 - /api/voicecall/ringring, signal 407).
+```ts
+export type RingRingVoiceCallOptions = {
+    status?: number;
+};
+
+export type RingRingVoiceCallResponse = Record<string, unknown>;
+```
+
+### sendRequestGroupCall
+- **Call**: `await api.call.sendRequestGroupCall(groupId: string, options: SendRequestGroupCallOptions,)` (or `await api.sendRequestGroupCall(groupId: string, options: SendRequestGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/request
+- **Description**: Bước 2 gọi nhóm (cmd 12434 - /api/voicecall/group/request): Phát tín hiệu mời gọi nhóm tới danh sách thành viên.
+```ts
+export type SendRequestGroupCallOptions = {
+    calleeId?: string;
+    callId: number;
+    callType?: CallType | number;
+    data?: string | Record<string, unknown>;
+    session: string;
+    partners: string[];
+    hostCall?: string | number;
+    rtpAddress?: string;
+    rtcpAddress?: string;
+    codec?: string;
+    extendData?: string | Record<string, unknown>;
+    groupName?: string;
+    groupAvatar?: string;
+    maxUsers?: number;
+};
+
+export type SendRequestGroupCallResponse = Record<string, unknown>;
+```
+
+### sendRequestVoiceCall
+- **Call**: `await api.call.sendRequestVoiceCall(calleeId: string, options: SendRequestVoiceCallOptions,)` (or `await api.sendRequestVoiceCall(calleeId: string, options: SendRequestVoiceCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/request
+- **Description**: Bước 2 gọi 1-1 (cmd 11301 - /api/voicecall/request, signal 416): Gửi gói mời gọi (Invite) kèm extendData ZRTC để kích hoạt đổ chuông trên thiết bị người nhận.
+```ts
+export type SendRequestVoiceCallOptions = {
+    callId: number;
+    session: string;
+    rtpAddress: string;
+    rtcpAddress: string;
+    codec?: string;
+    extendData?: string | Record<string, unknown>;
+    subCommand?: number;
+};
+
+export type SendRequestVoiceCallResponse = Record<string, unknown>;
+```
+
+### sendVoiceCall
+- **Call**: `await api.call.sendVoiceCall(calleeId: string, options: SendVoiceCallOptions = {},)` (or `await api.sendVoiceCall(calleeId: string, options: SendVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/requestcall, /api/voicecall/request
+- **Description**: Khởi tạo cuộc gọi Thoại hoặc Video 1-1 trọn gói (tự động thực hiện 2 bước 11300 + 11301 làm đổ chuông máy người nhận).
+```ts
+export enum CallType {
+    Audio = 1,
+    Video = 3,
+    GroupAudio = 5,
+    GroupVideo = 6,
+}
+
+/**
+ * Chuẩn hoá mã loại cuộc gọi nhóm khi gửi lên máy chủ Zalo (`ZJBuilderInternal::fromZCallStateToGroupState` @ `0x100029620`):
+ * - `CallType.GroupAudio` (`5`) hoặc `0` ➔ `0` (Thoại nhóm)
+ * - `CallType.GroupVideo` (`6`), `CallType.Video` (`3`) hoặc `1` ➔ `1` (Video nhóm)
+ */
+
+export type SendVoiceCallOptions = {
+    callType?: CallType;
+    callId?: number;
+    codec?: string;
+};
+
+export type RequestCallServerEntry = {
+    rtpaddr?: string;
+    rtcpaddr?: string;
+    rtpIPv6?: string;
+    rtcpIPv6?: string;
+    spTcp?: number;
+    bonus?: number;
+    [key: string]: unknown;
+};
+
+export type RequestCallServerInfo = {
+    sessId: string;
+    fromId?: number;
+    toId?: number;
+    protocol?: number;
+    rtpServer?: string;
+    rtcpServer?: string;
+    rtpIP?: string;
+    rtcpIP?: string;
+    rtpIPv6?: string;
+    rtcpIPv6?: string;
+    servers?: RequestCallServerEntry[];
+    zrtpKey?: string;
+    zrtc_config?: Record<string, unknown> | string;
+    settings?: Record<string, unknown>;
+    expiredTime?: number;
+    codec?: string;
+    [key: string]: unknown;
+};
+
+export type SendVoiceCallResponse = {
+    callId: number;
+    sessId: string;
+    rtpServer: string;
+    rtcpServer: string;
+    zrtpKey?: string;
+    expiredTime?: number;
+    codec?: string;
+    serverInfo?: RequestCallServerInfo;
+    requestResult?: unknown;
+};
+```
+
+### shareScreenGroupCall
+- **Call**: `await api.call.shareScreenGroupCall(callId: number, options: ShareScreenGroupCallOptions,)` (or `await api.shareScreenGroupCall(callId: number, options: ShareScreenGroupCallOptions,)`)
+- **Endpoint**: GET /api/voicecall/group/sharescreen
+- **Description**: Bắt đầu hoặc dừng chia sẻ màn hình trong cuộc gọi nhóm (cmd 12044 - /api/voicecall/group/sharescreen).
+```ts
+export type ShareScreenGroupCallOptions = {
+    userId?: string | number;
+    hostCall: string | number;
+    status?: number;
+    audioState?: number;
+    videoState?: number;
+    data?: string | Record<string, unknown>;
+};
+
+export type ShareScreenGroupCallResponse = Record<string, unknown>;
+```
+
+### unholdVoiceCall
+- **Call**: `await api.call.unholdVoiceCall(toId: string, options: UnholdVoiceCallOptions = {},)` (or `await api.unholdVoiceCall(toId: string, options: UnholdVoiceCallOptions = {},)`)
+- **Endpoint**: GET /api/voicecall/unholdreq, /api/voicecall/unholdresp, /api/voicecall/
+- **Description**: Khôi phục (Unhold) cuộc gọi 1-1 đang tạm giữ hoặc phản hồi yêu cầu khôi phục (cmd 11309 unholdreq / cmd 11310 unholdresp, signal 413/414).
+```ts
+export type UnholdVoiceCallOptions = {
+    isResponse?: boolean;
+};
+
+export type UnholdVoiceCallResponse = Record<string, unknown>;
+```
+
+### updateCallMediaState
+- **Call**: `await api.call.updateCallMediaState(calleeId: string, callId: number, options: UpdateCallMediaStateOptions,)` (or `await api.updateCallMediaState(calleeId: string, callId: number, options: UpdateCallMediaStateOptions,)`)
+- **Endpoint**: GET /api/voicecall/conf
+- **Description**: Đồng bộ trạng thái bật/tắt Mic và Camera trong cuộc gọi 1-1 (cmd 12006 - /api/voicecall/conf).
+```ts
+export type UpdateCallMediaStateOptions = {
+    isOnCam?: boolean | number;
+    isOnMic?: boolean | number;
+    data?: string | Record<string, unknown>;
+};
+
+export type UpdateCallMediaStateResponse = Record<string, unknown>;
+```
+
+## Domain: Kho lưu trữ & Chuyển giọng nói (Media) (`api.media` — 8 APIs)
+Truy vấn Kho Lưu Trữ Ảnh/Video, File, Link của nhóm và Cloud của tôi (Send2Me), cùng chuyển đổi Voice-to-Text AI.
+
+### getConversationMedia
+- **Call**: `await api.media.getConversationMedia(options: GetConversationMediaOptions)` (or `await api.getConversationMedia(options: GetConversationMediaOptions)`)
+- **Endpoint**: GET /api/mediastore/list
+- **Description**: Lấy danh sách Kho Lưu Trữ (Ảnh/Video "media", File "file", hoặc Link "link") trong hội thoại nhóm (command 11841)
+```ts
+export type MediaStoreType = "media" | "file" | "link";
+
+export type GetConversationMediaOptions = {
+    groupId?: string;
+    threadId?: string;
+    mediaType?: MediaStoreType;
+    limit?: number;
+    lastId?: number | string;
+    lastFetchId?: number;
+};
+
+export type MediaStoreItem = {
+    id: number | string;
+    type: string;
+    sub_type?: number;
+    owner_id?: string;
+    group_id?: string;
+    global_msg_id?: string | number;
+    client_msg_id?: string | number;
+    title?: string;
+    src_url?: string;
+    thumb_url?: string;
+    previewThumb?: string | null;
+    created_time?: number;
+    file_size?: number;
+    checksum?: string;
+    width?: number;
+    height?: number;
+    duration?: number;
+    [key: string]: unknown;
+};
+
+export type GetConversationMediaResponse = {
+    items: MediaStoreItem[];
+    isLimitPermission: boolean;
+    last_id: number | string;
+    has_more: number;
+};
+```
+
+### getMediaStorePreview
+- **Call**: `await api.media.getMediaStorePreview(groupId: string, limit: number = 50)` (or `await api.getMediaStorePreview(groupId: string, limit: number = 50)`)
+- **Endpoint**: POST /api/mediastore/preview
+- **Description**: Lấy danh sách xem trước nhanh Kho Lưu Trữ (Ảnh/Video, File, Link) của nhóm (command 11843)
+```ts
+export type GetMediaStorePreviewResponse = MediaStoreItem[];
+```
+
+### getPersonalMedia
+- **Call**: `await api.media.getPersonalMedia(options: GetPersonalMediaOptions = {})` (or `await api.getPersonalMedia(options: GetPersonalMediaOptions = {})`)
+- **Endpoint**: GET /api/media/oneone/list
+- **Description**: Lấy danh sách Kho Lưu Trữ Ảnh/Video ("media"), File ("file"), hoặc Link ("link") trong Cloud của tôi (Send2Me) (command 12220)
+```ts
+export type GetPersonalMediaOptions = {
+    mediaType?: MediaStoreType;
+    limit?: number;
+    lastId?: number | string;
+    lastFetchId?: number;
+};
+```
+
+### getPersonalMediaPreview
+- **Call**: `await api.media.getPersonalMediaPreview(limit: number = 50)` (or `await api.getPersonalMediaPreview(limit: number = 50)`)
+- **Endpoint**: POST /api/media/oneone/preview
+- **Description**: Lấy danh sách xem trước nhanh Kho Lưu Trữ trong Cloud của tôi (Send2Me) (command 12221)
+```ts
+export type GetPersonalMediaPreviewResponse = MediaStoreItem[];
+```
+
+### removeConversationMedia
+- **Call**: `await api.media.removeConversationMedia(options: RemoveConversationMediaOptions)` (or `await api.removeConversationMedia(options: RemoveConversationMediaOptions)`)
+- **Endpoint**: POST /api/mediastore/remove
+- **Description**: Xóa mục Ảnh/Video, File hoặc Link khỏi Kho Lưu Trữ của nhóm (command 11842)
+```ts
+export type RemoveConversationMediaOptions = {
+    groupId: string;
+    mediaType: MediaStoreType;
+    mediaId: string | number | (string | number)[];
+};
+
+export type RemoveConversationMediaResponse = unknown;
+```
+
+### removePersonalMedia
+- **Call**: `await api.media.removePersonalMedia(options: RemovePersonalMediaOptions)` (or `await api.removePersonalMedia(options: RemovePersonalMediaOptions)`)
+- **Endpoint**: POST /api/media/oneone/remove
+- **Description**: Xóa mục lưu trữ trong Kho Lưu Trữ Cloud của tôi (Send2Me) (command 12222)
+```ts
+export type RemovePersonalMediaOptions = {
+    mediaType: MediaStoreType;
+    mediaId: number | string | Array<number | string>;
+};
+
+export type RemovePersonalMediaResponse = {
+    [key: string]: unknown;
+};
+```
+
+### uploadAttachment
+- **Call**: `await api.media.uploadAttachment(sources: AttachmentSource | AttachmentSource[], threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.uploadAttachment(sources: AttachmentSource | AttachmentSource[], threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api
+- **Description**: Tải tệp đính kèm (Ảnh, Video, File) lên máy chủ Zalo để lấy thông tin fileUrl / fileId trước khi gửi.
+```ts
+export type UploadAttachmentImageResponse = {
+    normalUrl: string;
+    photoId: string;
+    finished: number | boolean;
+    hdUrl: string;
+    thumbUrl: string;
+    clientFileId: number;
+    chunkId: number;
+
+    fileType: "image";
+    width: number;
+    height: number;
+    totalSize: number;
+    hdSize: number;
+};
+
+export type UploadAttachmentVideoResponse = {
+    finished: number | boolean;
+    clientFileId: number;
+    chunkId: number;
+
+    fileType: "video";
+    fileUrl: string;
+    fileId: string;
+    checksum: string;
+    totalSize: number;
+    fileName: string;
+};
+
+export type UploadAttachmentFileResponse = {
+    finished: number | boolean;
+    clientFileId: number;
+    chunkId: number;
+
+    fileType: "others";
+    fileUrl: string;
+    fileId: string;
+    checksum: string;
+    totalSize: number;
+    fileName: string;
+};
+
+export type ImageData = {
+    fileName: string;
+    totalSize: number | undefined;
+    width: number | undefined;
+    height: number | undefined;
+};
+
+export type FileData = {
+    fileName: string;
+    totalSize: number;
+};
+
+export type UploadAttachmentType =
+    | UploadAttachmentImageResponse
+    | UploadAttachmentVideoResponse
+    | UploadAttachmentFileResponse;
+
+export type UploadAttachmentResponse = UploadAttachmentType[];
+
+type RawResponse = {
+    finished: number | boolean;
+    clientFileId: number;
+    chunkId: number;
+
+    fileId?: string;
+    photoId?: string;
+
+    normalUrl?: string;
+    hdUrl?: string;
+    thumbUrl?: string;
+};
+
+type AttachmentData =
+    | {
+          filePath: string;
+          fileType: "image";
+          chunkContent: FormData[];
+          fileData: ImageData;
+          params: {
+              toid?: string;
+              grid?: string;
+              totalChunk: number;
+              fileName: string;
+              clientId: number;
+              totalSize: number;
+              imei: string;
+              isE2EE: number;
+              jxl: number;
+              chunkId: number;
+          };
+          source: AttachmentSource;
+      }
+    | {
+          filePath: string;
+          fileType: "video" | "others";
+          chunkContent: FormData[];
+          fileData: FileData;
+          params: {
+              toid?: string;
+              grid?: string;
+              totalChunk: number;
+              fileName: string;
+              clientId: number;
+              totalSize: number;
+              imei: string;
+              isE2EE: number;
+              jxl: number;
+              chunkId: number;
+          };
+          source: AttachmentSource;
+      };
+```
+
+### voiceToText
+- **Call**: `await api.media.voiceToText(voiceUrl: string)` (or `await api.voiceToText(voiceUrl: string)`)
+- **Endpoint**: POST /api/aifeatures/voice2text
+- **Description**: Gửi yêu cầu chuyển đổi tin nhắn thoại sang văn bản bằng Zalo AI (command 13394). Kết quả văn bản sau khi xử lý xong sẽ được đẩy về qua sự kiện api.listener.on("voice2text_event", ...) khớp với req_id.
+```ts
+export type VoiceToTextResponse = {
+    req_id: string;
+};
+```
+
+## Domain: Nhãn dán, GIF Giphy/Guggy & Hiệu ứng (Sticker) (`api.sticker` — 24 APIs)
+Tìm kiếm nhãn dán, danh mục nhãn dán V2, nhãn dán gợi ý theo ngữ cảnh, kho ảnh động GIF (Giphy, Guggy, Tenor) và hiệu ứng tin nhắn nền (Message Effects).
+
+### getAIStickerList
+- **Call**: `await api.sticker.getAIStickerList()` (or `await api.getAIStickerList()`)
+- **Endpoint**: GET /api/message/sticker/ai/list
+- **Description**: Lấy danh sách Sticker AI của người dùng (command 12190)
+```ts
+export type GetAIStickerListResponse = Record<string, unknown>;
+```
+
+### getDefaultGuggyGifs
+- **Call**: `await api.sticker.getDefaultGuggyGifs(limit: number = 10)` (or `await api.getDefaultGuggyGifs(limit: number = 10)`)
+- **Endpoint**: GET /api/message/guggy/default
+- **Description**: Lấy danh sách ảnh động Guggy GIF mặc định (command 11749)
+```ts
+export type GetDefaultGuggyGifsResponse = Record<string, unknown>;
+```
+
+### getGifCategories
+- **Call**: `await api.sticker.getGifCategories(offset: number = 0, limit: number = 10)` (or `await api.getGifCategories(offset: number = 0, limit: number = 10)`)
+- **Endpoint**: GET /api/message/giphy/cates
+- **Description**: Lấy danh sách danh mục ảnh động Giphy GIF (command 11294)
+```ts
+export type GetGifCategoriesResponse = Record<string, unknown>;
+```
+
+### getGifDictionaries
+- **Call**: `await api.sticker.getGifDictionaries(offset: number = 0, limit: number = 10)` (or `await api.getGifDictionaries(offset: number = 0, limit: number = 10)`)
+- **Endpoint**: GET /api/message/giphy/dicts
+- **Description**: Lấy danh sách từ điển ảnh động Giphy GIF (command 11298)
+```ts
+export type GetGifDictionariesResponse = Record<string, unknown>;
+```
+
+### getGifsByCategory
+- **Call**: `await api.sticker.getGifsByCategory(cateId: number, offset: number = 0, limit: number = 10)` (or `await api.getGifsByCategory(cateId: number, offset: number = 0, limit: number = 10)`)
+- **Endpoint**: GET /api/message/giphy/gifs
+- **Description**: Lấy danh sách ảnh động Giphy GIF theo ID danh mục (command 11295)
+```ts
+export type GetGifsByCategoryResponse = Record<string, unknown>;
+```
+
+### getGifsByDictionary
+- **Call**: `await api.sticker.getGifsByDictionary(dicId: number, offset: number = 0, limit: number = 10)` (or `await api.getGifsByDictionary(dicId: number, offset: number = 0, limit: number = 10)`)
+- **Endpoint**: GET /api/message/giphy/gifsbydict
+- **Description**: Lấy danh sách ảnh động Giphy GIF theo ID từ điển (command 11299)
+```ts
+export type GetGifsByDictionaryResponse = Record<string, unknown>;
+```
+
+### getMessageEffectById
+- **Call**: `await api.sticker.getMessageEffectById(id: number | string, size: number = 130)` (or `await api.getMessageEffectById(id: number | string, size: number = 130)`)
+- **Endpoint**: GET /api/message/effect/get
+- **Description**: Lấy chi tiết một hiệu ứng tin nhắn theo ID và kích thước (command 11743)
+```ts
+export type GetMessageEffectByIdResponse = Record<string, unknown>;
+```
+
+### getMessageEffects
+- **Call**: `await api.sticker.getMessageEffects(effectIds: number | number[] = [1])` (or `await api.getMessageEffects(effectIds: number | number[] = [1])`)
+- **Endpoint**: GET /api/message/effects
+- **Description**: Lấy thông tin hiệu ứng tin nhắn theo danh sách ID (command 11742)
+```ts
+export type GetMessageEffectsResponse = Record<string, unknown>;
+```
+
+### getPersonalizedStickerList
+- **Call**: `await api.sticker.getPersonalizedStickerList()` (or `await api.getPersonalizedStickerList()`)
+- **Endpoint**: GET /api/message/sticker/personalized/list
+- **Description**: Lấy danh sách Sticker cá nhân hóa của tài khoản (command 11745)
+```ts
+export type GetPersonalizedStickerListResponse = {
+    list: unknown[];
+    version: number;
+};
+```
+
+### getRecommendedStickers
+- **Call**: `await api.sticker.getRecommendedStickers()` (or `await api.getRecommendedStickers()`)
+- **Endpoint**: GET /api/message/sticker/recommended
+- **Description**: Lấy danh sách các bộ Sticker được Zalo đề xuất (command 11748)
+```ts
+export type GetRecommendedStickersResponse = Record<string, unknown>;
+```
+
+### getStickerCategoriesV2
+- **Call**: `await api.sticker.getStickerCategoriesV2()` (or `await api.getStickerCategoriesV2()`)
+- **Endpoint**: GET /api/message/sticker/category/list/v2
+- **Description**: Lấy danh sách danh mục bộ nhãn dán (Sticker Categories V2 - command 12020)
+```ts
+export type StickerCategoryV2Item = {
+    id: number;
+    name: string;
+    desc?: string;
+    totalImage?: number;
+    iconUrl?: string;
+    thumbUrl?: string;
+    previewUrl?: string;
+    status?: number;
+    type?: number;
+    [key: string]: unknown;
+};
+
+export type GetStickerCategoriesV2Response = {
+    categories: StickerCategoryV2Item[];
+    [key: string]: unknown;
+};
+```
+
+### getStickerCategoryData
+- **Call**: `await api.sticker.getStickerCategoryData(cid: number)` (or `await api.getStickerCategoryData(cid: number)`)
+- **Endpoint**: GET /api/message/sticker/category/detail
+- **Description**: Lấy thông tin chi tiết một bộ nhãn dán theo cid (command 11156)
+```ts
+export type GetStickerCategoryDataResponse = StickerCategoryV2Item;
+```
+
+### getStickerCategoryDetail
+- **Call**: `await api.sticker.getStickerCategoryDetail(cateId: number)` (or `await api.getStickerCategoryDetail(cateId: number)`)
+- **Endpoint**: GET /api/message/sticker/category/sticker_detail
+- **Description**: Lấy danh sách toàn bộ nhãn dán nằm trong một bộ nhãn dán (Category/Pack ID).
+```ts
+export type GetStickerCategoryDetailResponse = StickerDetail[];
+```
+
+### getStickerHello
+- **Call**: `await api.sticker.getStickerHello()` (or `await api.getStickerHello()`)
+- **Endpoint**: GET /api/message/sticker/suggestion
+- **Description**: Lấy danh sách Sticker chào hỏi gợi ý khi bắt đầu trò chuyện mới (command 11751)
+```ts
+export type StickerHelloItem = {
+    id: number;
+    cateId: number;
+    type: number;
+    text: string;
+    uri: string;
+    fkey: number;
+    status: number;
+    stickerUrl: string;
+    stickerSpriteUrl: string;
+    stickerWebpUrl?: string | null;
+    totalFrames: number;
+    duration: number;
+};
+
+export type GetStickerHelloResponse = Record<string, unknown> | StickerHelloItem[];
+```
+
+### getStickerSuggestKeywords
+- **Call**: `await api.sticker.getStickerSuggestKeywords()` (or `await api.getStickerSuggestKeywords()`)
+- **Endpoint**: GET /api/message/sticker/suggest/keywords
+- **Description**: Lấy bộ từ khóa gợi ý Sticker tự động khi gõ tin nhắn (command 11740)
+```ts
+export type GetStickerSuggestKeywordsResponse = {
+    time: number;
+    suggest_data: {
+        version: number;
+        sdata: Array<{
+            keyword: string;
+            stickers?: number[];
+            [key: string]: unknown;
+        }>;
+    };
+};
+```
+
+### getStickerSuggestion
+- **Call**: `await api.sticker.getStickerSuggestion(options: GetStickerSuggestionOptions | string)` (or `await api.getStickerSuggestion(options: GetStickerSuggestionOptions | string)`)
+- **Endpoint**: GET /api/message/sticker/suggest/stickers
+- **Description**: Gợi ý Sticker/GIF theo từ khóa đang nhập (command 11741)
+```ts
+export type GetStickerSuggestionOptions = {
+    keyword: string;
+    gif?: 0 | 1;
+    guggy?: 0 | 1;
+};
+
+export type GetStickerSuggestionResponse = {
+    sdata: unknown;
+    gif?: unknown;
+    guggy?: unknown;
+    [key: string]: unknown;
+};
+```
+
+### getStickers
+- **Call**: `await api.sticker.getStickers(keyword: string)` (or `await api.getStickers(keyword: string)`)
+- **Endpoint**: GET /api/message/sticker
+- **Description**: Tìm kiếm danh sách ID nhãn dán theo từ khóa tiếng Việt/tiếng Anh.
+
+### getStickersDetail
+- **Call**: `await api.sticker.getStickersDetail(stickerIds: number | number[])` (or `await api.getStickersDetail(stickerIds: number | number[])`)
+- **Endpoint**: GET /api/message/sticker/sticker_detail
+- **Description**: Lấy thông tin chi tiết (URL ảnh động, loại sticker, cateId) của một hoặc nhiều Sticker ID.
+```ts
+export type StickerDetailResponse = StickerDetail[];
+```
+
+### getTenorStickerMapping
+- **Call**: `await api.sticker.getTenorStickerMapping()` (or `await api.getTenorStickerMapping()`)
+- **Endpoint**: GET /api/message/sticker/tenor/mapping
+- **Description**: Lấy bảng ánh xạ Tenor sang Sticker Zalo (command 12015)
+```ts
+export type GetTenorStickerMappingResponse = Record<string, unknown>;
+```
+
+### getTrendingGifs
+- **Call**: `await api.sticker.getTrendingGifs(offset: number = 0, limit: number = 10)` (or `await api.getTrendingGifs(offset: number = 0, limit: number = 10)`)
+- **Endpoint**: GET /api/message/giphy/trending
+- **Description**: Lấy danh sách ảnh động Giphy GIF thịnh hành (command 11296)
+```ts
+export type GetTrendingGifsResponse = Record<string, unknown>;
+```
+
+### searchGifs
+- **Call**: `await api.sticker.searchGifs(keyword: string, offset: number = 0, limit: number = 10)` (or `await api.searchGifs(keyword: string, offset: number = 0, limit: number = 10)`)
+- **Endpoint**: GET /api/message/giphy/search
+- **Description**: Tìm kiếm ảnh động Giphy GIF theo từ khóa (command 11297)
+```ts
+export type SearchGifsResponse = Record<string, unknown>;
+```
+
+### searchGuggyGifs
+- **Call**: `await api.sticker.searchGuggyGifs(keyword: string, limit: number = 10)` (or `await api.searchGuggyGifs(keyword: string, limit: number = 10)`)
+- **Endpoint**: GET /api/message/guggy/search
+- **Description**: Tìm kiếm ảnh động Guggy GIF theo từ khóa (command 11750)
+```ts
+export type SearchGuggyGifsResponse = Record<string, unknown>;
+```
+
+### searchSticker
+- **Call**: `await api.sticker.searchSticker(keyword: string, limit: number = 50)` (or `await api.searchSticker(keyword: string, limit: number = 50)`)
+- **Endpoint**: GET /api/message/sticker/search
+- **Description**: Tìm kiếm nhãn dán nâng cao theo từ khóa.
+```ts
+export type SearchStickerResponse = StickerBasic[];
+```
+
+### updatePersonalizedStickerList
+- **Call**: `await api.sticker.updatePersonalizedStickerList(stickerCateIds: number[], version: number = 0)` (or `await api.updatePersonalizedStickerList(stickerCateIds: number[], version: number = 0)`)
+- **Endpoint**: GET /api/message/sticker/personalized/update
+- **Description**: Cập nhật danh sách các bộ Sticker cá nhân hóa của người dùng (command 11746)
+```ts
+export type UpdatePersonalizedStickerListResponse = Record<string, unknown>;
+```
+
+## Domain: Bảng tin, Bình chọn, Lịch hẹn & Zalo To-Do (Board) (`api.board` — 38 APIs)
+Quản lý Tin ghim (Pin Topics), Ghi chú nhóm (Notes), Bình chọn (Polls), Lịch hẹn nhóm & 1-1 (Reminders), Bảng tin bạn bè và Giao việc Zalo To-Do.
+
+### ackDingTodo
+- **Call**: `await api.board.ackDingTodo(taskIds: string | string[])` (or `await api.ackDingTodo(taskIds: string | string[])`)
+- **Endpoint**: GET /api/board/personal/todo/dingack
+- **Description**: Xác nhận đã nhận nhắc nhở (Ding ACK) trong Zalo To-Do (command 12427)
+```ts
+export type AckDingTodoResponse = Record<string, unknown>;
+```
+
+### addPollOptions
+- **Call**: `await api.board.addPollOptions(payload: AddPollOptionsPayload)` (or `await api.addPollOptions(payload: AddPollOptionsPayload)`)
+- **Endpoint**: GET /api/poll/option/add
+- **Description**: Thêm phương án lựa chọn mới vào một cuộc Bình chọn (Poll) đang mở trong nhóm.
+```ts
+export type AddPollOptionsOption = {
+    voted: boolean;
+    content: string;
+};
+
+export type AddPollOptionsPayload = {
+    pollId: number;
+    options: AddPollOptionsOption[];
+    votedOptionIds: number[];
+};
+
+export type AddPollOptionsResponse = {
+    options: PollOptions[];
+};
+```
+
+### createNote
+- **Call**: `await api.board.createNote(options: CreateNoteOptions, groupId: string)` (or `await api.createNote(options: CreateNoteOptions, groupId: string)`)
+- **Endpoint**: POST /api/board/topic/createv2
+- **Description**: Tạo một Ghi chú (Note) mới trên Bảng tin nhóm và tùy chọn ghim lên đầu.
+```ts
+export type CreateNoteOptions = {
+    title: string;
+    pinAct?: boolean;
+};
+
+export type CreateNoteResponse = NoteDetail;
+```
+
+### createOneOneBoardTopic
+- **Call**: `await api.board.createOneOneBoardTopic(objectData: CreateOneOneBoardTopicOptions)` (or `await api.createOneOneBoardTopic(objectData: CreateOneOneBoardTopicOptions)`)
+- **Endpoint**: POST /api/board/oneone/create
+- **Description**: Tạo nhắc hẹn / chủ đề trong hội thoại cá nhân 1-1 (command 12429)
+```ts
+export type CreateOneOneBoardTopicOptions = {
+    toUid: string;
+    title: string;
+    emoji?: string;
+    startTime?: number;
+    repeat?: number;
+    color?: number;
+    [key: string]: unknown;
+};
+
+export type CreateOneOneBoardTopicResponse = Record<string, unknown>;
+```
+
+### createPoll
+- **Call**: `await api.board.createPoll(options: CreatePollOptions, groupId: string)` (or `await api.createPoll(options: CreatePollOptions, groupId: string)`)
+- **Endpoint**: POST /api/poll/create
+- **Description**: Tạo một cuộc Bình chọn (Poll) mới trong nhóm với nhiều phương án và cấu hình ẩn danh/đa lựa chọn.
+```ts
+export type CreatePollOptions = {
+    /**
+     * Question for the poll.
+     */
+    question: string;
+
+    /**
+     * List of options for the poll.
+     */
+    options: string[];
+
+    /**
+     * Poll expiration time in milliseconds (0 = no expiration).
+     */
+    expiredTime?: number;
+
+    /**
+     * Allows multiple choices in the poll.
+     */
+    allowMultiChoices?: boolean;
+
+    /**
+     * Allows members to add new options to the poll.
+     */
+    allowAddNewOption?: boolean;
+
+    /**
+     * Hides voting results until the user has voted.
+     */
+    hideVotePreview?: boolean;
+
+    /**
+     * Hides poll voters (anonymous poll).
+     */
+    isAnonymous?: boolean;
+};
+
+export type CreatePollResponse = PollDetail;
+```
+
+### createReminder
+- **Call**: `await api.board.createReminder(options: CreateReminderOptions, threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.createReminder(options: CreateReminderOptions, threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/board/oneone/create, /api/board/topic/createv2
+- **Description**: Tạo một Lịch hẹn (Reminder) mới trong hội thoại cá nhân hoặc nhóm.
+```ts
+export type CreateReminderOptions = {
+    title: string;
+    emoji?: string;
+    startTime?: number;
+    repeat?: ReminderRepeatMode;
+};
+
+export type CreateReminderUser = ReminderUser;
+
+export type CreateReminderGroup = Omit<ReminderGroup, "responseMem">;
+
+export type CreateReminderResponse = CreateReminderUser | CreateReminderGroup;
+```
+
+### createTodo
+- **Call**: `await api.board.createTodo(options: CreateTodoOptions)` (or `await api.createTodo(options: CreateTodoOptions)`)
+- **Endpoint**: POST /api/board/personal/todo/create
+- **Description**: Tạo công việc mới trong Zalo To-Do (command 12413)
+```ts
+export type CreateTodoOptions = {
+    title?: string;
+    content?: string;
+    assignees?: string[];
+    watchers?: string[];
+    dueDate?: number;
+    dateDefaultType?: number;
+    status?: number;
+    schedule?: unknown;
+    src?: number;
+    [key: string]: unknown;
+};
+
+export type CreateTodoResponse = {
+    id?: string;
+    [key: string]: unknown;
+};
+```
+
+### deleteTodo
+- **Call**: `await api.board.deleteTodo(todoId: string)` (or `await api.deleteTodo(todoId: string)`)
+- **Endpoint**: GET /api/board/personal/delete
+- **Description**: Xóa công việc trong Zalo To-Do (command 12415)
+```ts
+export type DeleteTodoResponse = Record<string, unknown>;
+```
+
+### dingTodo
+- **Call**: `await api.board.dingTodo(taskIds: string | string[])` (or `await api.dingTodo(taskIds: string | string[])`)
+- **Endpoint**: GET /api/board/personal/todo/ding
+- **Description**: Gửi nhắc nhở (Ding) cho các công việc trong Zalo To-Do (command 12426)
+```ts
+export type DingTodoResponse = Record<string, unknown>;
+```
+
+### editNote
+- **Call**: `await api.board.editNote(options: EditNoteOptions, groupId: string)` (or `await api.editNote(options: EditNoteOptions, groupId: string)`)
+- **Endpoint**: POST /api/board/topic/updatev2
+- **Description**: Chỉnh sửa nội dung ghi chú đã tạo trên Bảng tin nhóm.
+```ts
+export type EditNoteOptions = {
+    /**
+     * New note title
+     */
+    title: string;
+    /**
+     * Topic ID to edit note from
+     */
+    topicId: string;
+    /**
+     * Should the note be pinned?
+     */
+    pinAct?: boolean;
+};
+
+export type EditNoteResponse = NoteDetail;
+```
+
+### editReminder
+- **Call**: `await api.board.editReminder(options: EditReminderOptions, threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.editReminder(options: EditReminderOptions, threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: POST /api/board/oneone/update, /api/board/topic/updatev2
+- **Description**: Chỉnh sửa nội dung và thời gian của một Lịch hẹn (Reminder).
+```ts
+export type EditReminderOptions = {
+    title: string;
+    topicId: string;
+    emoji?: string;
+    startTime?: number;
+    repeat?: ReminderRepeatMode;
+};
+
+export type EditReminderUser = ReminderUser;
+
+export type EditReminderGroup = Omit<ReminderGroup, "responseMem">;
+
+export type EditReminderResponse = EditReminderUser | EditReminderGroup;
+```
+
+### getListBoard
+- **Call**: `await api.board.getListBoard(options: ListBoardOptions, groupId: string)` (or `await api.getListBoard(options: ListBoardOptions, groupId: string)`)
+- **Endpoint**: GET /api/board/list
+- **Description**: Lấy danh sách các mục trên Bảng tin nhóm (bao gồm Ghi chú, Bình chọn và Tin nhắn ghim) qua /api/board/list.
+```ts
+export type ListBoardOptions = {
+    /**
+     * Page number (default: 1)
+     */
+    page?: number;
+    /**
+     * Number of items to retrieve (default: 20)
+     */
+    count?: number;
+};
+
+export type BoardItem = {
+    boardType: BoardType;
+    data: PollDetail | NoteDetail | PinnedMessageDetail;
+};
+
+export type GetListBoardResponse = {
+    items: BoardItem[];
+    count: number;
+};
+
+type RawListBoard = {
+    items: {
+        boardType: BoardType;
+        data: Record<string, unknown>;
+    }[];
+    count: number;
+};
+```
+
+### getListOneOneBoard
+- **Call**: `await api.board.getListOneOneBoard(options: GetListOneOneBoardOptions)` (or `await api.getListOneOneBoard(options: GetListOneOneBoardOptions)`)
+- **Endpoint**: GET /api/board/oneone/list
+- **Description**: Lấy danh sách nhắc hẹn / chủ đề trong hội thoại cá nhân 1-1 (command 12432)
+```ts
+export type GetListOneOneBoardOptions = {
+    uid?: string;
+    conversationId?: string;
+    boardType?: number;
+    page?: number;
+    count?: number;
+    lastId?: number;
+    lastType?: number;
+};
+
+export type GetListOneOneBoardResponse = Record<string, unknown> | unknown[];
+```
+
+### getListPinTopics
+- **Call**: `await api.board.getListPinTopics(groupId: string, boardVersion: number = 0)` (or `await api.getListPinTopics(groupId: string, boardVersion: number = 0)`)
+- **Endpoint**: GET /api/board/pin/list
+- **Description**: Lấy danh sách chủ đề / tin nhắn đã ghim trong bảng tin nhóm (command 12001)
+```ts
+export type GetListPinTopicsResponse = {
+    items: unknown[];
+    version: number;
+};
+```
+
+### getListReminder
+- **Call**: `await api.board.getListReminder(options: ListReminderOptions, threadId: string, type: ThreadType = ThreadType.User,)` (or `await api.getListReminder(options: ListReminderOptions, threadId: string, type: ThreadType = ThreadType.User,)`)
+- **Endpoint**: GET /api/board/oneone/list, /api/board/listReminder
+- **Description**: Lấy danh sách các Lịch hẹn (Reminders) trong hội thoại cá nhân hoặc nhóm.
+```ts
+export type ListReminderOptions = {
+    /**
+     * Page number (default: 1)
+     */
+    page?: number;
+    /**
+     * Number of items to retrieve (default: 20)
+     */
+    count?: number;
+};
+
+export type ReminderListUser = ReminderUser;
+
+export type ReminderListGroup = ReminderGroup & {
+    groupId: string;
+    eventType: number;
+    responseMem: {
+        rejectMember: number;
+        myResp: number;
+        acceptMember: number;
+    };
+    repeatInfo: {
+        list_ts: unknown[];
+    };
+    repeatData: unknown[];
+};
+
+export type GetListReminderResponse = (ReminderListUser & ReminderListGroup)[];
+```
+
+### getPollDetail
+- **Call**: `await api.board.getPollDetail(pollId: number)` (or `await api.getPollDetail(pollId: number)`)
+- **Endpoint**: POST /api/poll/detail
+- **Description**: Lấy thông tin chi tiết và toàn bộ danh sách UID thành viên đã bỏ phiếu (voters) trong cuộc Bình chọn qua /api/poll/detail.
+```ts
+export type PollDetailResponse = PollDetail;
+```
+
+### getReminder
+- **Call**: `await api.board.getReminder(reminderId: string)` (or `await api.getReminder(reminderId: string)`)
+- **Endpoint**: GET /api/board/topic/getReminder
+- **Description**: Lấy thông tin chi tiết của một Lịch hẹn (Reminder) trong nhóm.
+```ts
+export type GetReminderResponse = ReminderGroup;
+```
+
+### getReminderResponses
+- **Call**: `await api.board.getReminderResponses(reminderId: string)` (or `await api.getReminderResponses(reminderId: string)`)
+- **Endpoint**: GET /api/board/topic/listResponseEvent
+- **Description**: Lấy danh sách UID các thành viên đã bấm Tham gia (acceptMember) hoặc Từ chối (rejectMember) một Lịch hẹn.
+```ts
+export type GetReminderResponsesResponse = {
+    rejectMember: string[];
+    acceptMember: string[];
+};
+```
+
+### getTodoDetail
+- **Call**: `await api.board.getTodoDetail(todoId: string)` (or `await api.getTodoDetail(todoId: string)`)
+- **Endpoint**: GET /api/board/personal/get
+- **Description**: Lấy chi tiết công việc trong Zalo To-Do (command 12417)
+```ts
+export type GetTodoDetailResponse = Record<string, unknown>;
+```
+
+### getTodoList
+- **Call**: `await api.board.getTodoList(options: GetTodoListOptions = {})` (or `await api.getTodoList(options: GetTodoListOptions = {})`)
+- **Endpoint**: GET /api/board/personal/list
+- **Description**: Lấy danh sách công việc trong Zalo To-Do (command 12416)
+```ts
+export type GetTodoListOptions = {
+    scrollId?: string;
+    queries?: Record<string, unknown> | string;
+    offset?: number;
+    limit?: number;
+    type?: number;
+};
+
+export type GetTodoListResponse = Record<string, unknown>;
+```
+
+### lockPoll
+- **Call**: `await api.board.lockPoll(pollId: number)` (or `await api.lockPoll(pollId: number)`)
+- **Endpoint**: POST /api/poll/end
+- **Description**: Khóa (Kết thúc) một cuộc Bình chọn trong nhóm.
+```ts
+export type LockPollResponse = "";
+```
+
+### multiUnpinBoardTopics
+- **Call**: `await api.board.multiUnpinBoardTopics(groupId: string, topics: unknown[], boardVersion: number = 0)` (or `await api.multiUnpinBoardTopics(groupId: string, topics: unknown[], boardVersion: number = 0)`)
+- **Endpoint**: GET /api/board/multi_unpin
+- **Description**: Bỏ ghim đồng thời nhiều chủ đề khỏi bảng tin nhóm (command 12010)
+```ts
+export type MultiUnpinBoardTopicsResponse = Record<string, unknown>;
+```
+
+### pinBoardTopic
+- **Call**: `await api.board.pinBoardTopic(groupId: string, topicId: string, type: number)` (or `await api.pinBoardTopic(groupId: string, topicId: string, type: number)`)
+- **Endpoint**: GET /api/board/pinv2
+- **Description**: Ghim một chủ đề / bài đăng lên bảng tin nhóm (command 12004)
+```ts
+export type PinBoardTopicResponse = Record<string, unknown>;
+```
+
+### pinFriendMessage
+- **Call**: `await api.board.pinFriendMessage(conversationId: string, topic: unknown, version: number = 0)` (or `await api.pinFriendMessage(conversationId: string, topic: unknown, version: number = 0)`)
+- **Endpoint**: GET /api/friendboard/create
+- **Description**: Ghim tin nhắn / chủ đề trong hội thoại cá nhân 1-1 (command 12067)
+```ts
+export type PinFriendMessageResponse = Record<string, unknown>;
+```
+
+### removeBoardTopic
+- **Call**: `await api.board.removeBoardTopic(groupId: string, topicId: string)` (or `await api.removeBoardTopic(groupId: string, topicId: string)`)
+- **Endpoint**: POST /api/board/topic/remove
+- **Description**: Xóa chủ đề / ghi chú trên bảng tin nhóm (command 12143)
+```ts
+export type RemoveBoardTopicResponse = Record<string, unknown>;
+```
+
+### removeOneOneBoardTopic
+- **Call**: `await api.board.removeOneOneBoardTopic(uid: string, reminderId: string)` (or `await api.removeOneOneBoardTopic(uid: string, reminderId: string)`)
+- **Endpoint**: POST /api/board/oneone/remove
+- **Description**: Xóa nhắc hẹn / chủ đề trong hội thoại cá nhân 1-1 (command 12431)
+```ts
+export type RemoveOneOneBoardTopicResponse = Record<string, unknown>;
+```
+
+### removeReminder
+- **Call**: `await api.board.removeReminder(reminderId: string, threadId: string, type: ThreadType = ThreadType.User)` (or `await api.removeReminder(reminderId: string, threadId: string, type: ThreadType = ThreadType.User)`)
+- **Endpoint**: POST /api/board/oneone/remove, /api/board/topic/remove
+- **Description**: Xóa một Lịch hẹn trong hội thoại cá nhân hoặc nhóm.
+```ts
+export type RemoveReminderResponse = "" | number;
+```
+
+### reorderFriendBoard
+- **Call**: `await api.board.reorderFriendBoard(conversationId: string, topics: unknown[], version: number = 0)` (or `await api.reorderFriendBoard(conversationId: string, topics: unknown[], version: number = 0)`)
+- **Endpoint**: GET /api/friendboard/reorder
+- **Description**: Sắp xếp lại thứ tự các tin nhắn đã ghim trong hội thoại 1-1 (command 12068)
+```ts
+export type ReorderFriendBoardResponse = Record<string, unknown>;
+```
+
+### reorderPinTopics
+- **Call**: `await api.board.reorderPinTopics(groupId: string, topics: unknown[], boardVersion: number = 0)` (or `await api.reorderPinTopics(groupId: string, topics: unknown[], boardVersion: number = 0)`)
+- **Endpoint**: POST /api/board/pin/update
+- **Description**: Sắp xếp lại thứ tự các chủ đề đã ghim trên bảng tin nhóm (command 12002)
+```ts
+export type ReorderPinTopicsResponse = Record<string, unknown>;
+```
+
+### respondReminder
+- **Call**: `await api.board.respondReminder(groupId: string, eventId: string, type: number)` (or `await api.respondReminder(groupId: string, eventId: string, type: number)`)
+- **Endpoint**: POST /api/board/topic/updateEventResponse
+- **Description**: Phản hồi tham gia hoặc từ chối lịch nhắc hẹn trong nhóm (command 12087)
+```ts
+export type RespondReminderResponse = Record<string, unknown>;
+```
+
+### sharePoll
+- **Call**: `await api.board.sharePoll(pollId: number)` (or `await api.sharePoll(pollId: number)`)
+- **Endpoint**: POST /api/poll/share
+- **Description**: Chia sẻ lại cuộc Bình chọn vào luồng tin nhắn nhóm.
+```ts
+export type SharePollResponse = "";
+```
+
+### unpinBoardTopic
+- **Call**: `await api.board.unpinBoardTopic(groupId: string, topic: unknown, boardVersion: number = 0)` (or `await api.unpinBoardTopic(groupId: string, topic: unknown, boardVersion: number = 0)`)
+- **Endpoint**: GET /api/board/unpinv2
+- **Description**: Bỏ ghim một chủ đề khỏi bảng tin nhóm (command 12005)
+```ts
+export type UnpinBoardTopicResponse = Record<string, unknown>;
+```
+
+### unpinFriendMessages
+- **Call**: `await api.board.unpinFriendMessages(conversationId: string, topics: unknown[], version: number = 0)` (or `await api.unpinFriendMessages(conversationId: string, topics: unknown[], version: number = 0)`)
+- **Endpoint**: GET /api/friendboard/multi_unpin
+- **Description**: Bỏ ghim một hoặc nhiều tin nhắn trong hội thoại 1-1 (command 12069)
+```ts
+export type UnpinFriendMessagesResponse = Record<string, unknown>;
+```
+
+### updateOneOneBoardTopic
+- **Call**: `await api.board.updateOneOneBoardTopic(objectData: UpdateOneOneBoardTopicOptions)` (or `await api.updateOneOneBoardTopic(objectData: UpdateOneOneBoardTopicOptions)`)
+- **Endpoint**: POST /api/board/oneone/update
+- **Description**: Cập nhật nhắc hẹn / chủ đề trong hội thoại cá nhân 1-1 (command 12430)
+```ts
+export type UpdateOneOneBoardTopicOptions = {
+    toUid: string;
+    reminderId: string;
+    title?: string;
+    emoji?: string;
+    startTime?: number;
+    repeat?: number;
+    color?: number;
+    [key: string]: unknown;
+};
+
+export type UpdateOneOneBoardTopicResponse = Record<string, unknown>;
+```
+
+### updateTodo
+- **Call**: `await api.board.updateTodo(options: UpdateTodoOptions)` (or `await api.updateTodo(options: UpdateTodoOptions)`)
+- **Endpoint**: POST /api/board/personal/todo/update
+- **Description**: Cập nhật nội dung công việc trong Zalo To-Do (command 12414)
+```ts
+export type UpdateTodoOptions = {
+    id: string;
+    title?: string;
+    content?: string;
+    assignees?: string[];
+    watchers?: string[];
+    dueDate?: number;
+    dateDefaultType?: number;
+    status?: number;
+    schedule?: unknown;
+    [key: string]: unknown;
+};
+
+export type UpdateTodoResponse = Record<string, unknown>;
+```
+
+### updateTodoStatus
+- **Call**: `await api.board.updateTodoStatus(todoId: string, status: number)` (or `await api.updateTodoStatus(todoId: string, status: number)`)
+- **Endpoint**: GET /api/board/personal/todo/status
+- **Description**: Cập nhật trạng thái công việc trong Zalo To-Do (command 12418)
+```ts
+export type UpdateTodoStatusResponse = Record<string, unknown>;
+```
+
+### verifyTodo
+- **Call**: `await api.board.verifyTodo(scrollId: string = "", lastUpdatedTime: number = 0)` (or `await api.verifyTodo(scrollId: string = "", lastUpdatedTime: number = 0)`)
+- **Endpoint**: GET /api/board/personal/todo/verify
+- **Description**: Kiểm tra tính đồng bộ của danh sách công việc trong Zalo To-Do (command 12603)
+```ts
+export type VerifyTodoResponse = Record<string, unknown>;
+```
+
+### votePoll
+- **Call**: `await api.board.votePoll(pollId: number, optionId: number | number[])` (or `await api.votePoll(pollId: number, optionId: number | number[])`)
+- **Endpoint**: GET /api/poll/vote
+- **Description**: Bỏ phiếu bình chọn cho một hoặc nhiều phương án trong cuộc Bình chọn nhóm.
+```ts
+export type VotePollResponse = {
+    options: PollOptions[];
+};
+```
+
+## Domain: Zalo Business, OA, Nhãn CRM & Danh mục (Business) (`api.business` — 36 APIs)
+Quản lý Zalo Official Account (getOAProfile, blockOA, unblockOA, convertOAIds), Nhãn phân loại hội thoại CRM (Labels), Tin nhắn nhanh (Quick Messages), Trả lời tự động (Auto Reply), Danh mục sản phẩm (Catalog) và Ngân hàng.
+
+### addConversationLabel
+- **Call**: `await api.business.addConversationLabel(options: AddConversationLabelOptions)` (or `await api.addConversationLabel(options: AddConversationLabelOptions)`)
+- **Endpoint**: POST /api/convlabel/manage/add
+- **Description**: Tạo nhãn phân loại hội thoại mới (command 12163)
+```ts
+export type AddConversationLabelOptions = {
+    text: string;
+    color: number;
+    emoji?: string;
+    conversations?: string[];
+};
+
+export type AddConversationLabelResponse = {
+    labelData?: unknown;
+    version?: number;
+    lastUpdateTime?: number;
+    [key: string]: unknown;
+};
+```
+
+### addQuickMessage
+- **Call**: `await api.business.addQuickMessage(addPayload: AddQuickMessagePayload)` (or `await api.addQuickMessage(addPayload: AddQuickMessagePayload)`)
+- **Endpoint**: GET /api/quickmessage/create
+- **Description**: Thêm mẫu Tin nhắn nhanh (Quick Message) mới cho tài khoản Zalo Business.
+```ts
+export type AddQuickMessagePayload = {
+    keyword: string;
+    title: string;
+    media?: AttachmentSource;
+};
+
+export type AddQuickMessageResponse = {
+    item: QuickMessage;
+    version: number;
+};
+```
+
+### blockOA
+- **Call**: `await api.business.blockOA(oaId: string)` (or `await api.blockOA(oaId: string)`)
+- **Endpoint**: POST /api/social/oa/block
+- **Description**: Chặn nhận tin nhắn / thông báo từ một Zalo Official Account (OA) qua /api/social/oa/block (cmd 12681).
+```ts
+export type BlockOAResponse = "" | Record<string, unknown>;
+```
+
+### convertOAIds
+- **Call**: `await api.business.convertOAIds(oaIds: string | string[])` (or `await api.convertOAIds(oaIds: string | string[])`)
+- **Endpoint**: GET /api/social/oa/convertid
+- **Description**: Chuyển đổi danh sách OA ID sang Zalo UID nội bộ (hoặc ngược lại) qua /api/social/oa/convertid (cmd 11863).
+```ts
+export type ConvertOAIdsResponse = {
+    [oaId: string]: string | unknown;
+};
+```
+
+### createAutoReply
+- **Call**: `await api.business.createAutoReply(payload: CreateAutoReplyPayload)` (or `await api.createAutoReply(payload: CreateAutoReplyPayload)`)
+- **Endpoint**: POST /api/autoreply/create
+- **Description**: Tạo kịch bản Trả lời tự động (Auto Reply) theo khung giờ cho Zalo Business.
+```ts
+export type CreateAutoReplyPayload = {
+    content: string;
+    isEnable: boolean;
+    startTime: number;
+    endTime: number;
+    scope: AutoReplyScope;
+    uids?: string | string[];
+};
+
+export type CreateAutoReplyResponse = {
+    item: AutoReplyItem;
+    version: number;
+};
+```
+
+### createBankAccount
+- **Call**: `await api.business.createBankAccount(payload: CreateBankAccountPayload)` (or `await api.createBankAccount(payload: CreateBankAccountPayload)`)
+- **Endpoint**: POST /api/transfer/create
+- **Description**: Thêm thông tin tài khoản ngân hàng mới vào danh bạ ngân hàng.
+```ts
+export type CreateBankAccountPayload = {
+    binBank: BinBankCard;
+    numAccBank: string;
+    nameAccBank: string;
+};
+
+export type CreateBankAccountResponse = BankAccount;
+```
+
+### createCatalog
+- **Call**: `await api.business.createCatalog(catalogName: string)` (or `await api.createCatalog(catalogName: string)`)
+- **Endpoint**: POST /api/prodcatalog/catalog/create
+- **Description**: Tạo Danh mục sản phẩm (Catalog) mới cho Zalo Business.
+```ts
+export type CreateCatalogResponse = {
+    item: CatalogItem;
+    version_ls_catalog: number;
+    version_catalog: number;
+};
+```
+
+### createProductCatalog
+- **Call**: `await api.business.createProductCatalog(payload: CreateProductCatalogPayload)` (or `await api.createProductCatalog(payload: CreateProductCatalogPayload)`)
+- **Endpoint**: POST /api/prodcatalog/product/create
+- **Description**: Thêm sản phẩm mới vào Danh mục sản phẩm (Product Catalog).
+```ts
+export type CreateProductCatalogPayload = {
+    catalogId: string;
+
+    productName: string;
+    price: string;
+    description: string;
+
+    /**
+     * Upto 5 media files are allowed, will be ignored if product_photos is provided
+     */
+    files?: AttachmentSource[];
+    /**
+     * List of product photo URLs, upto 5
+     *
+     * You can manually get the URL using `uploadProductPhoto` api
+     */
+    product_photos?: string[];
+};
+
+export type CreateProductCatalogResponse = {
+    item: ProductCatalogItem;
+    version_ls_catalog: number;
+    version_catalog: number;
+};
+```
+
+### deleteAutoReply
+- **Call**: `await api.business.deleteAutoReply(id: number)` (or `await api.deleteAutoReply(id: number)`)
+- **Endpoint**: POST /api/autoreply/delete
+- **Description**: Xóa một kịch bản Trả lời tự động.
+```ts
+export type DeleteAutoReplyResponse = {
+    item: number;
+    version: number;
+};
+```
+
+### deleteBankAccount
+- **Call**: `await api.business.deleteBankAccount(payload: DeleteBankAccountPayload)` (or `await api.deleteBankAccount(payload: DeleteBankAccountPayload)`)
+- **Endpoint**: POST /api/transfer/delete
+- **Description**: Xóa một tài khoản ngân hàng đã lưu.
+```ts
+export type DeleteBankAccountPayload = {
+    accountId: number;
+    isDefault: boolean;
+};
+
+export type DeleteBankAccountResponse = {
+    hasMore: boolean;
+    total: number;
+    myBanks: BankAccount[];
+};
+```
+
+### deleteCatalog
+- **Call**: `await api.business.deleteCatalog(catalogId: string)` (or `await api.deleteCatalog(catalogId: string)`)
+- **Endpoint**: POST /api/prodcatalog/catalog/delete
+- **Description**: Xóa một Danh mục sản phẩm (Catalog).
+```ts
+export type DeleteCatalogResponse = "";
+```
+
+### deleteConversationLabel
+- **Call**: `await api.business.deleteConversationLabel(labelIds: number | number[])` (or `await api.deleteConversationLabel(labelIds: number | number[])`)
+- **Endpoint**: POST /api/convlabel/manage/delete
+- **Description**: Xóa một hoặc nhiều nhãn phân loại hội thoại (command 12165)
+```ts
+export type DeleteConversationLabelResponse = {
+    version?: number;
+    lastUpdateTime?: number;
+    [key: string]: unknown;
+};
+```
+
+### deleteProductCatalog
+- **Call**: `await api.business.deleteProductCatalog(payload: DeleteProductCatalogPayload)` (or `await api.deleteProductCatalog(payload: DeleteProductCatalogPayload)`)
+- **Endpoint**: POST /api/prodcatalog/product/mdelete
+- **Description**: Xóa một hoặc nhiều sản phẩm khỏi Danh mục sản phẩm.
+```ts
+export type DeleteProductCatalogPayload = {
+    productIds: string | string[];
+    catalogId: string;
+};
+
+export type DeleteProductCatalogResponse = {
+    item: number[];
+    version_ls_catalog: number;
+    version_catalog: number;
+};
+```
+
+### deleteSingleProduct
+- **Call**: `await api.business.deleteSingleProduct(options: DeleteSingleProductOptions)` (or `await api.deleteSingleProduct(options: DeleteSingleProductOptions)`)
+- **Endpoint**: POST /api/prodcatalog/product/delete
+- **Description**: Xóa một sản phẩm đơn lẻ khỏi danh mục Zalo Business (command 12042)
+```ts
+export type DeleteSingleProductOptions = {
+    productId: string;
+    catalogId: string;
+};
+
+export type DeleteSingleProductResponse = Record<string, unknown>;
+```
+
+### getAutoReplyList
+- **Call**: `await api.business.getAutoReplyList()` (or `await api.getAutoReplyList()`)
+- **Endpoint**: GET /api/autoreply/list
+- **Description**: Lấy danh sách các kịch bản Trả lời tự động của tài khoản.
+```ts
+export type GetAutoReplyListResponse = {
+    item: AutoReplyItem[];
+    version: number;
+};
+```
+
+### getBizAccount
+- **Call**: `await api.business.getBizAccount(friendId: string)` (or `await api.getBizAccount(friendId: string)`)
+- **Endpoint**: POST /api/social/friend/get-bizacc
+- **Description**: Lấy thông tin cấu hình tài khoản Zalo Business (ZBusiness).
+```ts
+export type GetBizAccountResponse = {
+    biz?: {
+        desc: string | null;
+        cate: BusinessCategory;
+        addr: string;
+        website: string;
+        email: string;
+    };
+    setting_start_page?: {
+        enable_biz_label: number;
+        enable_cate: number;
+        enable_add: number;
+        cta_profile: number;
+        /**
+         * Relative path used to build the catalog URL.
+         *
+         * Example: https://catalog.zalo.me/${cta_catalog}
+         */
+        cta_catalog: string | null;
+    } | null;
+    pkgId: number;
+};
+```
+
+### getCatalogList
+- **Call**: `await api.business.getCatalogList(payload?: GetCatalogListPayload)` (or `await api.getCatalogList(payload?: GetCatalogListPayload)`)
+- **Endpoint**: POST /api/prodcatalog/catalog/list
+- **Description**: Lấy danh sách các Danh mục sản phẩm (Catalogs) của tài khoản.
+```ts
+export type GetCatalogListPayload = {
+    /**
+     * Number of items to retrieve (default: 20)
+     */
+    limit?: number;
+    lastProductId?: number;
+    /**
+     * Page number (default: 0)
+     */
+    page?: number;
+};
+
+export type GetCatalogListResponse = {
+    items: CatalogItem[];
+    version: number;
+    has_more: number;
+};
+```
+
+### getLabels
+- **Call**: `await api.business.getLabels()` (or `await api.getLabels()`)
+- **Endpoint**: GET /api/convlabel/get
+- **Description**: Lấy toàn bộ danh sách Nhãn phân loại hội thoại (Conversation Labels) và các hội thoại được gắn nhãn.
+```ts
+export type GetLabelsResponse = {
+    labelData: LabelData[];
+    version: number;
+    lastUpdateTime: number;
+};
+
+type RawResponseType = Omit<GetLabelsResponse, "labelData"> & {
+    labelData: string;
+};
+```
+
+### getListBank
+- **Call**: `await api.business.getListBank()` (or `await api.getListBank()`)
+- **Endpoint**: GET /api/transfer/conf
+- **Description**: Lấy danh sách mã ngân hàng (BIN / NAPAS) được Zalo hỗ trợ.
+```ts
+export type GetListBankResponse = {
+    banks: BankInfo[];
+};
+```
+
+### getListBankAccount
+- **Call**: `await api.business.getListBankAccount(page: number = 0, limit: number = 20)` (or `await api.getListBankAccount(page: number = 0, limit: number = 20)`)
+- **Endpoint**: GET /api/transfer/list
+- **Description**: Lấy danh sách các tài khoản ngân hàng đã lưu của người dùng.
+```ts
+export type GetListBankAccountResponse = {
+    hasMore: boolean;
+    total: number;
+    myBanks: BankAccount[];
+};
+```
+
+### getOAProfile
+- **Call**: `await api.business.getOAProfile(oaId: string, options: GetOAProfileOptions = {})` (or `await api.getOAProfile(oaId: string, options: GetOAProfileOptions = {})`)
+- **Endpoint**: POST /api/social/friend/get-bizacc, /api/social/friend/getprofiles/v2
+- **Description**: Lấy hồ sơ chuẩn hóa đầy đủ của một Zalo Official Account (OA) theo oaId (bao gồm tích vàng isVerified, isZaloBot, dnrStatus, hotline, website, giờ mở cửa, địa chỉ, danh mục...).
+```ts
+export type GetOAProfileOptions = {
+    /**
+     * Kích thước ảnh đại diện (mặc định: `240`).
+     */
+    avatarSize?: number;
+    /**
+     * Có lấy kèm thông tin tài khoản Business (`/api/social/friend/get-bizacc`) hay không (mặc định: `true`).
+     */
+    includeBizAccount?: boolean;
+};
+
+export type GetOAProfileResponse = OAProfileInfo;
+```
+
+### getProductCatalogList
+- **Call**: `await api.business.getProductCatalogList(payload: GetProductCatalogListPayload)` (or `await api.getProductCatalogList(payload: GetProductCatalogListPayload)`)
+- **Endpoint**: POST /api/prodcatalog/product/list
+- **Description**: Lấy danh sách các sản phẩm nằm trong một Danh mục sản phẩm (Catalog).
+```ts
+export type GetProductCatalogListPayload = {
+    catalogId: string;
+    /**
+     * Number of items to retrieve (default: 100)
+     */
+    limit?: number;
+    versionCatalog?: number;
+    lastProductId?: string;
+    /**
+     * Page number (default: 0)
+     */
+    page?: number;
+};
+
+export type GetProductCatalogListResponse = {
+    items: ProductCatalogItem[];
+    version: number;
+    has_more: number;
+};
+```
+
+### getProductDetail
+- **Call**: `await api.business.getProductDetail(productId: string)` (or `await api.getProductDetail(productId: string)`)
+- **Endpoint**: POST /api/prodcatalog/product/view
+- **Description**: Lấy thông tin chi tiết một sản phẩm trong danh mục Zalo Business (command 12057)
+```ts
+export type GetProductDetailResponse = Record<string, unknown>;
+```
+
+### getQuickMessageList
+- **Call**: `await api.business.getQuickMessageList()` (or `await api.getQuickMessageList()`)
+- **Endpoint**: GET /api/quickmessage/list
+- **Description**: Lấy danh sách các mẫu Tin nhắn nhanh (Quick Messages) đã tạo.
+```ts
+export type GetQuickMessageListResponse = {
+    cursor: number;
+    version: number;
+    items: QuickMessage[];
+};
+```
+
+### registerCatalog
+- **Call**: `await api.business.registerCatalog(enable: boolean)` (or `await api.registerCatalog(enable: boolean)`)
+- **Endpoint**: POST /api/prodcatalog/catalog/register
+- **Description**: Đăng ký kích hoạt tính năng Danh mục sản phẩm (Catalog) cho tài khoản.
+```ts
+export type RegisterCatalogResponse = "";
+```
+
+### removeQuickMessage
+- **Call**: `await api.business.removeQuickMessage(itemIds: number | number[])` (or `await api.removeQuickMessage(itemIds: number | number[])`)
+- **Endpoint**: GET /api/quickmessage/delete
+- **Description**: Xóa một hoặc nhiều mẫu Tin nhắn nhanh.
+```ts
+export type RemoveQuickMessageResponse = {
+    itemIds: number[];
+    version: number;
+};
+```
+
+### reorderConversationLabels
+- **Call**: `await api.business.reorderConversationLabels(items: ReorderConversationLabelEntry[])` (or `await api.reorderConversationLabels(items: ReorderConversationLabelEntry[])`)
+- **Endpoint**: POST /api/convlabel/manage/reorder
+- **Description**: Sắp xếp lại vị trí hiển thị của các nhãn phân loại hội thoại (command 12166)
+```ts
+export type ReorderConversationLabelEntry = {
+    id: number;
+    offset: number;
+};
+
+export type ReorderConversationLabelsResponse = {
+    labelData?: unknown;
+    version?: number;
+    lastUpdateTime?: number;
+    [key: string]: unknown;
+};
+```
+
+### unblockOA
+- **Call**: `await api.business.unblockOA(oaId: string)` (or `await api.unblockOA(oaId: string)`)
+- **Endpoint**: POST /api/social/oa/unblock
+- **Description**: Bỏ chặn một Zalo Official Account (OA) để tiếp tục nhận tin nhắn qua /api/social/oa/unblock (cmd 12682).
+```ts
+export type UnblockOAResponse = "" | Record<string, unknown>;
+```
+
+### updateAutoReply
+- **Call**: `await api.business.updateAutoReply(payload: UpdateAutoReplyPayload)` (or `await api.updateAutoReply(payload: UpdateAutoReplyPayload)`)
+- **Endpoint**: POST /api/autoreply/update
+- **Description**: Cập nhật nội dung và thời gian hoạt động của kịch bản Trả lời tự động.
+```ts
+export type UpdateAutoReplyPayload = {
+    id: number;
+    content: string;
+    isEnable: boolean;
+    startTime: number;
+    endTime: number;
+    scope: AutoReplyScope;
+    uids?: string | string[];
+};
+
+export type UpdateAutoReplyResponse = {
+    item: AutoReplyItem;
+    version: number;
+};
+```
+
+### updateBankAccount
+- **Call**: `await api.business.updateBankAccount(payload: UpdateBankAccountPayload)` (or `await api.updateBankAccount(payload: UpdateBankAccountPayload)`)
+- **Endpoint**: POST /api/transfer/update
+- **Description**: Cập nhật thông tin tài khoản ngân hàng đã lưu.
+```ts
+export type UpdateBankAccountPayload = {
+    accountId: number;
+    binBank: BinBankCard;
+    numAccBank: string;
+    nameAccBank: string;
+};
+
+export type UpdateBankAccountResponse = BankAccount;
+```
+
+### updateCatalog
+- **Call**: `await api.business.updateCatalog(payload: UpdateCatalogPayload)` (or `await api.updateCatalog(payload: UpdateCatalogPayload)`)
+- **Endpoint**: POST /api/prodcatalog/catalog/update
+- **Description**: Cập nhật tên hoặc ảnh của Danh mục sản phẩm.
+```ts
+export type UpdateCatalogPayload = {
+    catalogId: string;
+    catalogName: string;
+};
+
+export type UpdateCatalogResponse = {
+    item: CatalogItem;
+    version_ls_catalog: number;
+    version_catalog: number;
+};
+```
+
+### updateConversationLabelItem
+- **Call**: `await api.business.updateConversationLabelItem(options: UpdateConversationLabelItemOptions)` (or `await api.updateConversationLabelItem(options: UpdateConversationLabelItemOptions)`)
+- **Endpoint**: POST /api/convlabel/manage/update
+- **Description**: Cập nhật thông tin một nhãn phân loại hội thoại và danh sách hội thoại gắn nhãn (command 12164)
+```ts
+export type UpdateConversationLabelItemOptions = {
+    id: number;
+    text: string;
+    color: number;
+    offset: number;
+    add?: string[];
+    remove?: string[];
+};
+
+export type UpdateConversationLabelItemResponse = {
+    labelData?: unknown;
+    version?: number;
+    lastUpdateTime?: number;
+    [key: string]: unknown;
+};
+```
+
+### updateLabels
+- **Call**: `await api.business.updateLabels(payload: UpdateLabelsPayload)` (or `await api.updateLabels(payload: UpdateLabelsPayload)`)
+- **Endpoint**: POST /api/convlabel/update
+- **Description**: Cập nhật danh sách Nhãn phân loại (Labels) và gán nhãn cho các cuộc trò chuyện.
+```ts
+export type UpdateLabelsPayload = {
+    labelData: LabelData[];
+    version: number;
+};
+
+export type UpdateLabelsResponse = {
+    labelData: LabelData[];
+    version: number;
+    lastUpdateTime: number;
+};
+```
+
+### updateProductCatalog
+- **Call**: `await api.business.updateProductCatalog(payload: UpdateProductCatalogPayload)` (or `await api.updateProductCatalog(payload: UpdateProductCatalogPayload)`)
+- **Endpoint**: POST /api/prodcatalog/product/update
+- **Description**: Cập nhật thông tin chi tiết, giá bán và hình ảnh của sản phẩm trong Danh mục.
+```ts
+export type UpdateProductCatalogPayload = {
+    catalogId: string;
+
+    productId: string;
+    productName: string;
+    price: string;
+    description: string;
+    createTime: number;
+
+    /**
+     * Upto 5 media files are allowed, will be ignored if product_photos is provided
+     */
+    files?: AttachmentSource[];
+    /**
+     * List of product photo URLs, upto 5
+     *
+     * You can manually get the URL using `uploadProductPhoto` api
+     */
+    product_photos?: string[];
+};
+
+export type UpdateProductCatalogResponse = {
+    item: ProductCatalogItem;
+    version_ls_catalog: number;
+    version_catalog: number;
+};
+```
+
+### updateQuickMessage
+- **Call**: `await api.business.updateQuickMessage(updatePayload: UpdateQuickMessagePayload, itemId: number)` (or `await api.updateQuickMessage(updatePayload: UpdateQuickMessagePayload, itemId: number)`)
+- **Endpoint**: GET /api/quickmessage/update
+- **Description**: Chỉnh sửa phím tắt và nội dung của mẫu Tin nhắn nhanh.
+```ts
+export type UpdateQuickMessagePayload = {
+    keyword: string;
+    title: string;
+    media?: AttachmentSource;
+};
+
+export type UpdateQuickMessageResponse = {
+    item: QuickMessage;
+    version: number;
+};
+```
+
+### uploadProductPhoto
+- **Call**: `await api.business.uploadProductPhoto(payload: UploadProductPhotoPayload)` (or `await api.uploadProductPhoto(payload: UploadProductPhotoPayload)`)
+- **Endpoint**: POST /api/product/upload/photo
+- **Description**: Tải ảnh sản phẩm lên máy chủ Zalo phục vụ cho Product Catalog hoặc Quick Message.
+```ts
+export type UploadProductPhotoPayload = {
+    file: AttachmentSource;
+};
+
+export type UploadProductPhotoResponse = {
+    normalUrl: string;
+    photoId: string;
+    finished: number;
+    hdUrl: string;
+    thumbUrl: string;
+    clientFileId: number;
+    chunkId: number;
+};
+```

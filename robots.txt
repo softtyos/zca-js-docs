@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://softtyos.github.io/zca-js-docs/sitemap.xml
+# AI / LLM Context Files (GEO & AI SEO)
+# Summary: https://softtyos.github.io/zca-js-docs/llms.txt
+# Full API Reference: https://softtyos.github.io/zca-js-docs/llms-full.txt
